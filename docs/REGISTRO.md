@@ -145,6 +145,13 @@ El menu de hamburguesa (arriba a la izquierda) tiene dos secciones:
 En la tabla de descargas, el numero de ticket es un enlace que abre la foto
 original de la que se saco la informacion.
 
+### Filtro por dia
+
+Una campana ronda las sesenta descargas, asi que la tabla no las lista todas de
+golpe: por defecto muestra la **ultima jornada** y el selector "Dia" abre el
+resto o la campana entera. Junto al titulo van las descargas y los kilos de lo
+que se este mostrando.
+
 ### Corregir y quitar tickets
 
 Desde la tabla de descargas, cada ticket registrado tiene **Editar** y **Borrar**.
