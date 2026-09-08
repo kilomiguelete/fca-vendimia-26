@@ -62,3 +62,20 @@ depende del maestro de parcelas. No se rellenan por estimacion.
   cero real: se dejan vacios y se anota en `observaciones`.
 - Campo ilegible o ausente → vacio, y se anota en `observaciones`.
 - Fechas en ISO (`AAAA-MM-DD`); el ticket las imprime como `DD/MM/AA`.
+
+## Dashboard
+
+`web/` es un sitio estatico sin build: `index.html` mas `datos.js`. Vercel lo
+sirve tal cual desde el repositorio y redespliega en cada push.
+
+`datos.js` esta **generado** a partir de los CSV — no se edita a mano. Despues
+de volcar tickets nuevos hay que regenerarlo y volver a commitear:
+
+```sh
+python3 datos/validar.py && python3 web/generar.py
+```
+
+El dashboard agrega grado y color como **media ponderada por kilos**, no en
+media simple: una descarga de 500 kg no puede pesar igual que una de 5.000 al
+calcular el grado de la campana. Los campos vacios (hora, temperatura, analitica
+no realizada) se excluyen del calculo en vez de contar como cero.

@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vendimia · Finca Casa Aparicio</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plano:      #f9f9f7;
+    --surface-1:  #fcfcfb;
+    --ink:        #0b0b0b;
+    --ink-2:      #52514e;
+    --ink-mute:   #898781;
+    --grid:       #e1e0d9;
+    --eje:        #c3c2b7;
+    --borde:      rgba(11,11,11,0.10);
+    --serie-1:    #2a78d6;
+    --serie-2:    #eb6834;
+    --serie-3:    #1baf7a;
+    --aviso:      #fab219;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --plano:     #0d0d0d;
+      --surface-1: #1a1a19;
+      --ink:       #ffffff;
+      --ink-2:     #c3c2b7;
+      --ink-mute:  #898781;
+      --grid:      #2c2c2a;
+      --eje:       #383835;
+      --borde:     rgba(255,255,255,0.10);
+      --serie-1:   #3987e5;
+      --serie-2:   #d95926;
+      --serie-3:   #199e70;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--plano); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .envoltura { max-width: 1120px; margin: 0 auto; padding: 32px 20px 72px; }
+  header { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--ink-2); font-size: 13px; }
+  select {
+    font: inherit; padding: 7px 11px; border-radius: 8px;
+    border: 1px solid var(--borde); background: var(--surface-1); color: var(--ink);
+  }
+  .tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .tarjeta, .panel {
+    background: var(--surface-1); border: 1px solid var(--borde); border-radius: 12px;
+  }
+  .tarjeta { padding: 16px 18px; }
+  .tarjeta .etiqueta { color: var(--ink-2); font-size: 12px; margin-bottom: 6px; }
+  .tarjeta .valor { font-size: 27px; font-weight: 600; letter-spacing: -0.02em; }
+  .tarjeta .unidad { font-size: 14px; font-weight: 400; color: var(--ink-2); margin-left: 3px; }
+  .tarjeta .pie { color: var(--ink-mute); font-size: 12px; margin-top: 5px; }
+  .panel { padding: 20px 22px; margin-top: 20px; }
+  .panel h2 { font-size: 15px; margin: 0 0 3px; }
+  .panel .nota { color: var(--ink-2); font-size: 12.5px; margin: 0 0 18px; }
+  .rejilla-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 20px; }
+  .rejilla-2 .panel { margin-top: 0; }
+  .aviso {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--surface-1); border: 1px solid var(--borde);
+    border-left: 3px solid var(--aviso); border-radius: 8px;
+    padding: 13px 16px; margin-top: 20px; font-size: 13px; color: var(--ink-2);
+  }
+  .aviso strong { color: var(--ink); font-weight: 600; }
+  .vacio { color: var(--ink-mute); font-size: 13px; padding: 22px 0; text-align: center; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--ink-2); font-weight: 500; font-size: 12px; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  .desplaza { overflow-x: auto; }
+  .llave { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: baseline; }
+  .leyenda { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: 12.5px; color: var(--ink-2); }
+  .pista {
+    position: fixed; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--surface-1); border: 1px solid var(--borde); border-radius: 8px;
+    padding: 9px 11px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.13); z-index: 9;
+    max-width: 260px;
+  }
+  .pista b { display: block; margin-bottom: 3px; color: var(--ink); }
+  .pista span { color: var(--ink-2); }
+  footer { margin-top: 40px; color: var(--ink-mute); font-size: 12px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="envoltura">
+  <header>
+    <div>
+      <h1>Vendimia · <span id="finca"></span></h1>
+      <div class="sub" id="subtitulo"></div>
+    </div>
+    <label class="sub">Campaña
+      <select id="selector"></select>
+    </label>
+  </header>
+
+  <div class="tarjetas" id="tarjetas"></div>
+  <div id="aviso-cobertura"></div>
+
+  <div class="panel">
+    <h2>Kilos por parcela</h2>
+    <p class="nota">Peso neto entregado en la campaña, por referencia SIGPAC.</p>
+    <div id="g-parcelas"></div>
+    <div class="desplaza"><table id="t-parcelas"></table></div>
+  </div>
+
+  <div class="rejilla-2">
+    <div class="panel">
+      <h2>Entradas por día</h2>
+      <p class="nota">Kilos netos descargados en cada jornada de vendimia.</p>
+      <div id="g-dias"></div>
+    </div>
+    <div class="panel">
+      <h2>Grado por día</h2>
+      <p class="nota">Grado alcohólico probable, media ponderada por kilos.</p>
+      <div id="g-grado"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Comparativa entre campañas</h2>
+    <p class="nota">Kilos de cada parcela, año a año. El grado va en el detalle al pasar el ratón.</p>
+    <div id="g-campanias"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Descargas</h2>
+    <p class="nota">Cada ticket de báscula volcado, en orden de entrada.</p>
+    <div class="desplaza"><table id="t-descargas"></table></div>
+  </div>
+
+  <footer id="pie"></footer>
+</div>
+<div class="pista" id="pista"></div>
+
+<script src="datos.js"></script>
+<script>
+(function () {
+  const D = window.DATOS;
+  const NS = "http://www.w3.org/2000/svg";
+  const pista = document.getElementById("pista");
+  const SERIES = ["--serie-1", "--serie-2", "--serie-3"];
+
+  const nf = (v, d = 0) => v == null ? "—" :
+    v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d,
+                                useGrouping: "always" });
+  const plural = (n, singular, prural) => `${n} ${n === 1 ? singular : prural}`;
+  const fechaCorta = f => {
+    const [a, m, d] = f.split("-");
+    return `${d}/${m}`;
+  };
+  const fechaLarga = f => {
+    const [a, m, d] = f.split("-");
+    return `${d}/${m}/${a}`;
+  };
+  const nombreParcela = p => p.nombre || p.ref;
+
+  function el(tag, attrs, padre) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (padre) padre.appendChild(n);
+    return n;
+  }
+  function svg(destino, ancho, alto) {
+    destino.innerHTML = "";
+    const s = el("svg", {
+      viewBox: `0 0 ${ancho} ${alto}`, width: "100%", height: alto,
+      style: "overflow: visible; display: block;"
+    }, destino);
+    return s;
+  }
+  function vacio(destino, texto) {
+    destino.innerHTML = `<p class="vacio">${texto}</p>`;
+  }
+  // El tooltip es parte del hit target: se engancha a un area mayor que la marca.
+  function conPista(nodo, titulo, lineas) {
+    nodo.style.cursor = "default";
+    nodo.addEventListener("mousemove", e => {
+      pista.innerHTML = `<b>${titulo}</b><span>${lineas.join("<br>")}</span>`;
+      pista.style.opacity = 1;
+      const r = pista.getBoundingClientRect();
+      const x = Math.min(e.clientX + 14, window.innerWidth - r.width - 8);
+      pista.style.left = x + "px";
+      pista.style.top = Math.max(8, e.clientY - r.height - 12) + "px";
+    });
+    nodo.addEventListener("mouseleave", () => { pista.style.opacity = 0; });
+  }
+  function ticksLimpios(max) {
+    if (max <= 0) return [0];
+    const bruto = max / 4;
+    const mag = Math.pow(10, Math.floor(Math.log10(bruto)));
+    const paso = [1, 2, 2.5, 5, 10].map(m => m * mag).find(p => p >= bruto) || mag * 10;
+    const salida = [];
+    for (let v = 0; v <= max * 1.0001; v += paso) salida.push(v);
+    if (salida[salida.length - 1] < max) salida.push(salida[salida.length - 1] + paso);
+    return salida;
+  }
+
+  /* --- Barras horizontales: magnitud comparada entre categorias --- */
+  function barrasH(destino, items, opciones) {
+    if (!items.length) return vacio(destino, opciones.vacio || "Sin datos.");
+    const paso = 38, margen = { top: 8, right: 74, bottom: 26, left: 148 };
+    const alto = margen.top + items.length * paso + margen.bottom;
+    const ancho = 900;
+    const s = svg(destino, ancho, alto);
+    const x0 = margen.left, x1 = ancho - margen.right;
+    const max = Math.max(...items.map(i => i.valor), 0);
+    const ticks = ticksLimpios(max);
+    const tope = ticks[ticks.length - 1] || 1;
+    const escala = v => x0 + (v / tope) * (x1 - x0);
+
+    ticks.forEach(t => {
+      el("line", { x1: escala(t), x2: escala(t), y1: margen.top, y2: alto - margen.bottom,
+                   stroke: "var(--grid)", "stroke-width": 1 }, s);
+      const tx = el("text", { x: escala(t), y: alto - margen.bottom + 15, "text-anchor": "middle",
+                              fill: "var(--ink-mute)", "font-size": 11 }, s);
+      tx.textContent = nf(t);
+    });
+    el("line", { x1: x0, x2: x0, y1: margen.top, y2: alto - margen.bottom,
+                 stroke: "var(--eje)", "stroke-width": 1 }, s);
+
+    items.forEach((item, i) => {
+      const grosor = 22, y = margen.top + i * paso + (paso - grosor) / 2;
+      const largo = Math.max(escala(item.valor) - x0, 2);
+      const r = Math.min(4, largo);
+      // extremo redondeado al final, escuadrado en la linea base
+      const d = `M${x0},${y} H${x0 + largo - r} a${r},${r} 0 0 1 ${r},${r}
+                 V${y + grosor - r} a${r},${r} 0 0 1 ${-r},${r} H${x0} Z`;
+      el("path", { d, fill: `var(${item.color || SERIES[0]})` }, s);
+
+      const etq = el("text", { x: margen.left - 10, y: y + grosor / 2 + 4, "text-anchor": "end",
+                               fill: "var(--ink-2)", "font-size": 12.5 }, s);
+      etq.textContent = item.etiqueta;
+      const val = el("text", { x: x0 + largo + 9, y: y + grosor / 2 + 4,
+                               fill: "var(--ink)", "font-size": 12.5,
+                               style: "font-variant-numeric: tabular-nums" }, s);
+      val.textContent = item.texto;
+
+      const zona = el("rect", { x: 0, y: margen.top + i * paso, width: ancho, height: paso,
+                                fill: "transparent" }, s);
+      conPista(zona, item.etiqueta, item.detalle);
+    });
+  }
+
+  /* --- Columnas por fecha: magnitud a lo largo de la campana --- */
+  function columnas(destino, items, opciones) {
+    if (!items.length) return vacio(destino, opciones.vacio || "Sin datos.");
+    const ancho = 520, alto = 240;
+    const margen = { top: 22, right: 14, bottom: 34, left: 52 };
+    const s = svg(destino, ancho, alto);
+    const y0 = alto - margen.bottom, y1 = margen.top;
+    const max = Math.max(...items.map(i => i.valor), 0);
+    const ticks = ticksLimpios(max);
+    const tope = ticks[ticks.length - 1] || 1;
+    const escalaY = v => y0 - (v / tope) * (y0 - y1);
+    const banda = (ancho - margen.left - margen.right) / items.length;
+    const grosor = Math.min(24, Math.max(6, banda - 14));
+
+    ticks.forEach(t => {
+      el("line", { x1: margen.left, x2: ancho - margen.right, y1: escalaY(t), y2: escalaY(t),
+                   stroke: "var(--grid)", "stroke-width": 1 }, s);
+      const tx = el("text", { x: margen.left - 8, y: escalaY(t) + 4, "text-anchor": "end",
+                              fill: "var(--ink-mute)", "font-size": 11 }, s);
+      tx.textContent = nf(t);
+    });
+
+    items.forEach((item, i) => {
+      const cx = margen.left + banda * (i + 0.5);
+      const y = escalaY(item.valor), h = Math.max(y0 - y, 2), r = Math.min(4, grosor / 2, h);
+      const d = `M${cx - grosor / 2},${y0} V${y + r} a${r},${r} 0 0 1 ${r},${-r}
+                 H${cx + grosor / 2 - r} a${r},${r} 0 0 1 ${r},${r} V${y0} Z`;
+      el("path", { d, fill: `var(${SERIES[0]})` }, s);
+      if (items.length <= 12) {
+        const tx = el("text", { x: cx, y: y0 + 15, "text-anchor": "middle",
+                                fill: "var(--ink-mute)", "font-size": 11 }, s);
+        tx.textContent = fechaCorta(item.fecha);
+      }
+      const zona = el("rect", { x: cx - banda / 2, y: y1, width: banda, height: y0 - y1,
+                                fill: "transparent" }, s);
+      conPista(zona, fechaLarga(item.fecha), item.detalle);
+    });
+    el("line", { x1: margen.left, x2: ancho - margen.right, y1: y0, y2: y0,
+                 stroke: "var(--eje)", "stroke-width": 1 }, s);
+  }
+
+  /* --- Serie temporal de grado: linea 2px + marcadores >=8px con anillo --- */
+  function serieGrado(destino, items, opciones) {
+    const puntos = items.filter(i => i.valor != null);
+    if (!puntos.length) return vacio(destino, opciones.vacio || "Sin analítica todavía.");
+    const ancho = 520, alto = 240;
+    const margen = { top: 22, right: 22, bottom: 34, left: 52 };
+    const s = svg(destino, ancho, alto);
+    const y0 = alto - margen.bottom, y1 = margen.top;
+    const vals = puntos.map(p => p.valor);
+    let min = Math.min(...vals), max = Math.max(...vals);
+    if (min === max) { min -= 1; max += 1; }
+    const holgura = (max - min) * 0.25;
+    min = Math.max(0, min - holgura); max = max + holgura;
+    const escalaY = v => y0 - ((v - min) / (max - min)) * (y0 - y1);
+    const banda = (ancho - margen.left - margen.right) / Math.max(items.length, 1);
+    const escalaX = i => margen.left + banda * (i + 0.5);
+
+    for (let k = 0; k <= 3; k++) {
+      const v = min + (max - min) * k / 3;
+      el("line", { x1: margen.left, x2: ancho - margen.right, y1: escalaY(v), y2: escalaY(v),
+                   stroke: "var(--grid)", "stroke-width": 1 }, s);
+      const tx = el("text", { x: margen.left - 8, y: escalaY(v) + 4, "text-anchor": "end",
+                              fill: "var(--ink-mute)", "font-size": 11 }, s);
+      tx.textContent = nf(v, 1);
+    }
+
+    const conIndice = items.map((it, i) => ({ ...it, i })).filter(it => it.valor != null);
+    if (conIndice.length > 1) {
+      const d = conIndice.map((p, k) => `${k ? "L" : "M"}${escalaX(p.i)},${escalaY(p.valor)}`).join(" ");
+      el("path", { d, fill: "none", stroke: `var(${SERIES[0]})`, "stroke-width": 2,
+                   "stroke-linejoin": "round", "stroke-linecap": "round" }, s);
+    }
+    conIndice.forEach(p => {
+      el("circle", { cx: escalaX(p.i), cy: escalaY(p.valor), r: 5,
+                     fill: `var(${SERIES[0]})`, stroke: "var(--surface-1)", "stroke-width": 2 }, s);
+      const zona = el("circle", { cx: escalaX(p.i), cy: escalaY(p.valor), r: 16, fill: "transparent" }, s);
+      conPista(zona, fechaLarga(p.fecha), p.detalle);
+      if (items.length <= 12) {
+        const tx = el("text", { x: escalaX(p.i), y: y0 + 15, "text-anchor": "middle",
+                                fill: "var(--ink-mute)", "font-size": 11 }, s);
+        tx.textContent = fechaCorta(p.fecha);
+      }
+    });
+    // etiqueta directa en el ultimo punto (una sola serie: sin caja de leyenda)
+    const ult = conIndice[conIndice.length - 1];
+    const xUlt = escalaX(ult.i), cercaBorde = xUlt > ancho - margen.right - 34;
+    const etq = el("text", { x: cercaBorde ? xUlt - 9 : xUlt, y: escalaY(ult.valor) - 13,
+                             "text-anchor": cercaBorde ? "end" : "middle",
+                             fill: "var(--ink)", "font-size": 12,
+                             style: "font-variant-numeric: tabular-nums" }, s);
+    etq.textContent = nf(ult.valor, 2) + "%";
+    el("line", { x1: margen.left, x2: ancho - margen.right, y1: y0, y2: y0,
+                 stroke: "var(--eje)", "stroke-width": 1 }, s);
+  }
+
+  /* --- Comparativa entre campanas: una serie de color por campana --- */
+  function comparativa(destino) {
+    if (D.campanias.length < 2) {
+      const c = D.campanias[0];
+      destino.innerHTML = `<p class="vacio">Solo hay una campaña registrada (${c ? c.campania : "—"}).
+        Esta comparativa se dibuja sola en cuanto se vuelquen tickets de la siguiente vendimia.</p>`;
+      return;
+    }
+    const total = {};
+    D.campanias.forEach(c => c.parcelas.forEach(p => { total[p.ref] = (total[p.ref] || 0) + p.kg; }));
+    const refs = Object.keys(total).sort((a, b) => total[b] - total[a]);
+    const nombres = {};
+    D.campanias.forEach(c => c.parcelas.forEach(p => { nombres[p.ref] = nombreParcela(p); }));
+
+    const leyenda = document.createElement("div");
+    leyenda.className = "leyenda";
+    D.campanias.forEach((c, i) => {
+      leyenda.innerHTML += `<span><i class="llave" style="background: var(${SERIES[i % SERIES.length]})"></i>${c.campania}</span>`;
+    });
+    destino.innerHTML = "";
+    destino.appendChild(leyenda);
+    const lienzo = document.createElement("div");
+    destino.appendChild(lienzo);
+
+    const items = [];
+    refs.forEach(ref => {
+      D.campanias.forEach((c, i) => {
+        const p = c.parcelas.find(x => x.ref === ref);
+        if (!p) return;
+        items.push({
+          etiqueta: `${nombres[ref]} · ${c.campania}`,
+          valor: p.kg, texto: nf(p.kg) + " kg",
+          color: SERIES[i % SERIES.length],
+          detalle: [`${nf(p.kg)} kg en ${plural(p.descargas, "descarga", "descargas")}`,
+                    `Grado medio ${nf(p.grado, 2)}%`]
+        });
+      });
+    });
+    barrasH(lienzo, items, {});
+  }
+
+  /* --- Composicion --- */
+  function pintar(campania) {
+    const c = D.campanias.find(x => x.campania === campania) || D.campanias[0];
+    const r = c.resumen;
+
+    document.getElementById("tarjetas").innerHTML = [
+      ["Kilos vendimiados", nf(r.kg), "kg", plural(r.descargas, "descarga", "descargas")],
+      ["Grado alcohólico probable", nf(r.grado, 2), "%", "media ponderada por kilos"],
+      ["Intensidad de color", nf(r.color, 2), "", "media ponderada por kilos"],
+      ["Parcelas vendimiadas", nf(r.parcelas), "",
+        r.primera === r.ultima ? fechaLarga(r.primera) : `${fechaLarga(r.primera)} – ${fechaLarga(r.ultima)}`]
+    ].map(([etiqueta, valor, unidad, pie]) => `
+      <div class="tarjeta">
+        <div class="etiqueta">${etiqueta}</div>
+        <div class="valor">${valor}<span class="unidad">${unidad}</span></div>
+        <div class="pie">${pie}</div>
+      </div>`).join("");
+
+    const faltan = [];
+    if (r.con_hora < r.descargas) faltan.push(`la hora en ${r.descargas - r.con_hora} de ${plural(r.descargas, "descarga", "descargas")}`);
+    if (r.con_temp < r.descargas) faltan.push(`la temperatura en ${r.descargas - r.con_temp} de ${r.descargas}`);
+    const sinNombre = c.parcelas.filter(p => !p.nombre).length;
+    if (sinNombre) faltan.push(`el nombre interno de ${plural(sinNombre, "parcela", "parcelas")}`);
+    document.getElementById("aviso-cobertura").innerHTML = faltan.length
+      ? `<div class="aviso"><span>⚠</span><div><strong>Datos pendientes.</strong>
+         Falta ${faltan.join(", ")}. El ticket de báscula no imprime hora ni temperatura:
+         hay que cruzarlas con el parte de campo o la sonda de la finca.</div></div>`
+      : "";
+
+    barrasH(document.getElementById("g-parcelas"), c.parcelas.map(p => ({
+      etiqueta: nombreParcela(p),
+      valor: p.kg, texto: nf(p.kg) + " kg",
+      detalle: [
+        p.nombre ? `SIGPAC ${p.ref}` : "Sin nombre interno asignado",
+        p.variedad,
+        `${nf(p.kg)} kg · ${plural(p.descargas, "descarga", "descargas")}`,
+        `Grado ${nf(p.grado, 2)}% · color ${nf(p.color, 2)}`
+      ]
+    })), { vacio: "Todavía no hay parcelas volcadas." });
+
+    document.getElementById("t-parcelas").innerHTML =
+      `<thead><tr><th>Parcela</th><th>SIGPAC</th><th>Variedad</th>
+        <th class="n">Kilos</th><th class="n">Descargas</th><th class="n">Grado</th><th class="n">Color</th></tr></thead>
+       <tbody>${c.parcelas.map(p => `<tr>
+          <td>${p.nombre || "<span style='color:var(--ink-mute)'>sin nombre</span>"}</td>
+          <td>${p.ref}</td><td>${p.variedad}</td>
+          <td class="n">${nf(p.kg)}</td><td class="n">${p.descargas}</td>
+          <td class="n">${nf(p.grado, 2)}</td><td class="n">${nf(p.color, 2)}</td>
+        </tr>`).join("")}</tbody>`;
+
+    columnas(document.getElementById("g-dias"), c.dias.map(d => ({
+      fecha: d.fecha, valor: d.kg,
+      detalle: [`${nf(d.kg)} kg`,
+                plural(d.descargas, "descarga", "descargas"),
+                plural(d.parcelas, "parcela", "parcelas")]
+    })), {});
+
+    serieGrado(document.getElementById("g-grado"), c.dias.map(d => ({
+      fecha: d.fecha, valor: d.grado,
+      detalle: [`Grado ${nf(d.grado, 2)}%`, `Color ${nf(d.color, 2)}`, `sobre ${nf(d.kg)} kg`]
+    })), {});
+
+    comparativa(document.getElementById("g-campanias"));
+
+    document.getElementById("t-descargas").innerHTML =
+      `<thead><tr><th>Ticket</th><th>Fecha</th><th>Hora</th><th>Parcela</th><th>Variedad</th>
+        <th class="n">Bruto</th><th class="n">Tara</th><th class="n">Neto</th>
+        <th class="n">Grado</th><th class="n">Color</th><th class="n">Tª</th><th>Matrículas</th></tr></thead>
+       <tbody>${c.descargas.map(d => `<tr>
+          <td>${d.ticket}</td><td>${fechaLarga(d.fecha)}</td>
+          <td>${d.hora || "<span style='color:var(--ink-mute)'>—</span>"}</td>
+          <td>${d.parcela || d.ref_sigpac}</td><td>${d.variedad}</td>
+          <td class="n">${nf(d.kg_bruto)}</td><td class="n">${nf(d.kg_tara)}</td>
+          <td class="n">${nf(d.kg)}</td>
+          <td class="n">${nf(d.grado, 2)}</td><td class="n">${nf(d.color, 2)}</td>
+          <td class="n">${d.temperatura == null ? "—" : nf(d.temperatura, 1)}</td>
+          <td>${d.matriculas}</td>
+        </tr>`).join("")}</tbody>`;
+  }
+
+  document.getElementById("finca").textContent = D.finca;
+  document.getElementById("subtitulo").textContent = "Tickets de báscula · " + D.bodega;
+  document.getElementById("pie").textContent =
+    "Los kilos son peso neto de báscula. Las medias de grado y color van ponderadas por kilos, "
+    + "no en media simple: una descarga de 500 kg no pesa lo mismo que una de 5.000.";
+
+  const sel = document.getElementById("selector");
+  sel.innerHTML = D.campanias.map(c => `<option>${c.campania}</option>`).join("");
+  sel.value = D.campanias[D.campanias.length - 1].campania;
+  sel.addEventListener("change", () => pintar(sel.value));
+  pintar(sel.value);
+})();
+</script>
+</body>
+</html>
