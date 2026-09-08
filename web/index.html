@@ -697,6 +697,7 @@
         descargas: grupo.length,
         grado: ponderada(grupo, "grado"),
         color: ponderada(grupo, "color"),
+        gluconico: ponderada(grupo, "gluconico"),
         primera: fechas[0] || null,
         ultima: fechas[fechas.length - 1] || null,
         parcelas: new Set(grupo.map(f => f.ref_sigpac)).size,
@@ -744,6 +745,7 @@
       ["Kilos vendimiados", nf(r.kg), "kg", plural(r.descargas, "descarga", "descargas")],
       ["Grado alcohólico probable", nf(r.grado, 2), "%", "media ponderada por kilos"],
       ["Intensidad de color", nf(r.color, 2), "", "media ponderada por kilos"],
+      ["Ácido glucónico", nf(r.gluconico, 2), "g/l", "indicador de podredumbre"],
       ["Parcelas vendimiadas", nf(r.parcelas), "",
         r.primera === r.ultima ? fechaLarga(r.primera) : `${fechaLarga(r.primera)} – ${fechaLarga(r.ultima)}`]
     ].map(([etiqueta, valor, unidad, pie]) => `
@@ -770,13 +772,15 @@
         p.nombre ? `SIGPAC ${p.ref}` : "Sin nombre interno asignado",
         p.variedad,
         `${nf(p.kg)} kg · ${plural(p.descargas, "descarga", "descargas")}`,
-        `Grado ${nf(p.grado, 2)}% · color ${nf(p.color, 2)}`
+        `Grado ${nf(p.grado, 2)}% · color ${nf(p.color, 2)}`,
+        `Glucónico ${nf(p.gluconico, 2)} g/l`
       ]
     })), { vacio: "Todavía no hay parcelas volcadas." });
 
     document.getElementById("t-parcelas").innerHTML =
       `<thead><tr><th>Parcela</th><th>SIGPAC</th><th>Variedad</th>
-        <th class="n">Kilos</th><th class="n">Descargas</th><th class="n">Grado</th><th class="n">Color</th></tr></thead>
+        <th class="n">Kilos</th><th class="n">Descargas</th><th class="n">Grado</th>
+        <th class="n">Color</th><th class="n">Glucónico</th></tr></thead>
        <tbody>${c.parcelas.map(p => `<tr>
           <td data-etq="Parcela">${p.nombre || "<span style='color:var(--ink-mute)'>sin nombre</span>"}</td>
           <td data-etq="SIGPAC">${p.ref}</td><td data-etq="Variedad">${p.variedad}</td>
@@ -784,6 +788,7 @@
           <td class="n" data-etq="Descargas">${p.descargas}</td>
           <td class="n" data-etq="Grado">${nf(p.grado, 2)}</td>
           <td class="n" data-etq="Color">${nf(p.color, 2)}</td>
+          <td class="n" data-etq="Glucónico">${nf(p.gluconico, 2)}</td>
         </tr>`).join("")}</tbody>`;
 
     const totalKg = c.resumen.kg || 1;
@@ -793,7 +798,7 @@
       detalle: [
         `${nf(v.kg)} kg · ${plural(v.descargas, "descarga", "descargas")}`,
         `${nf(v.kg / totalKg * 100, 1)}% de la campaña`,
-        `Grado ${nf(v.grado, 2)}% · color ${nf(v.color, 2)}`,
+        `Grado ${nf(v.grado, 2)}% · color ${nf(v.color, 2)} · glucónico ${nf(v.gluconico, 2)}`,
         plural(v.parcelas, "parcela", "parcelas"),
       ]
     })), { vacio: "Todavía no hay variedades registradas." });
@@ -801,7 +806,7 @@
     document.getElementById("t-variedades").innerHTML =
       `<thead><tr><th>Variedad</th><th class="n">Kilos</th><th class="n">% campaña</th>
         <th class="n">Descargas</th><th class="n">Parcelas</th>
-        <th class="n">Grado</th><th class="n">Color</th></tr></thead>
+        <th class="n">Grado</th><th class="n">Color</th><th class="n">Glucónico</th></tr></thead>
        <tbody>${c.variedades.map(v => `<tr>
           <td data-etq="Variedad">${v.variedad}</td>
           <td class="n" data-etq="Kilos">${nf(v.kg)}</td>
@@ -810,6 +815,7 @@
           <td class="n" data-etq="Parcelas">${v.parcelas}</td>
           <td class="n" data-etq="Grado">${nf(v.grado, 2)}</td>
           <td class="n" data-etq="Color">${nf(v.color, 2)}</td>
+          <td class="n" data-etq="Glucónico">${nf(v.gluconico, 2)}</td>
         </tr>`).join("")}</tbody>`;
 
     columnas(document.getElementById("g-dias"), c.dias.map(d => ({
@@ -821,7 +827,8 @@
 
     serieGrado(document.getElementById("g-grado"), c.dias.map(d => ({
       fecha: d.fecha, valor: d.grado,
-      detalle: [`Grado ${nf(d.grado, 2)}%`, `Color ${nf(d.color, 2)}`, `sobre ${nf(d.kg)} kg`]
+      detalle: [`Grado ${nf(d.grado, 2)}%`, `Color ${nf(d.color, 2)}`,
+                `Glucónico ${nf(d.gluconico, 2)} g/l`, `sobre ${nf(d.kg)} kg`]
     })), {});
 
     comparativa(document.getElementById("g-campanias"));
@@ -862,7 +869,7 @@
     document.getElementById("t-descargas").innerHTML =
       `<thead><tr><th>Ticket</th><th>Fecha</th><th>Hora</th><th>Parcela</th><th>Variedad</th>
         <th class="n">Bruto</th><th class="n">Tara</th><th class="n">Neto</th>
-        <th class="n">Grado</th><th class="n">Color</th><th>Matrículas</th>
+        <th class="n">Grado</th><th class="n">Color</th><th class="n">Glucón.</th><th>Matrículas</th>
         <th></th></tr></thead>
        <tbody>${visibles.map(d => `<tr>
           <td data-etq="Ticket">${d.tiene_foto
@@ -877,6 +884,7 @@
           <td class="n" data-etq="Neto">${nf(d.kg)}</td>
           <td class="n" data-etq="Grado">${nf(d.grado, 2)}</td>
           <td class="n" data-etq="Color">${nf(d.color, 2)}</td>
+          <td class="n" data-etq="Glucónico">${nf(d.gluconico, 2)}</td>
           <td class="matriculas" data-etq="Matrículas">${(d.matriculas || "").replace(" - ", "<br>")}</td>
           <td><div class="acciones-fila">
             <button class="icono" data-editar="${d.id}" data-ticket="${d.ticket}"

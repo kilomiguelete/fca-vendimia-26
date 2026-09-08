@@ -23,6 +23,7 @@ const resumir = filas => ({
   descargas: filas.length,
   grado: ponderada(filas, "grado"),
   color: ponderada(filas, "color"),
+  gluconico: ponderada(filas, "gluconico"),
 });
 
 /** Agrupa la campana por tipologia (la variedad tal como la imprime el ticket). */
@@ -113,7 +114,8 @@ export function construirPDF({ finca, bodega, campania, dia, descargas, campana 
   doc.font("Helvetica").fontSize(9.5).fillColor(TINTA2)
      .text(descargas.length
        ? `${rDia.descargas} descarga${rDia.descargas === 1 ? "" : "s"} · ${nf(rDia.kg)} kg · `
-         + `grado ${nf(rDia.grado, 2)}% · color ${nf(rDia.color, 2)}`
+         + `grado ${nf(rDia.grado, 2)}% · color ${nf(rDia.color, 2)} · `
+         + `glucónico ${nf(rDia.gluconico, 2)} g/l`
        : "Sin descargas registradas en esta jornada.", { width: ancho });
 
   let y = doc.y + 12;
@@ -123,20 +125,22 @@ export function construirPDF({ finca, bodega, campania, dia, descargas, campana 
       { clave: "hora",     titulo: "Hora",     x: izq + 54,  ancho: 36 },
       { clave: "parcela",  titulo: "Parcela",  x: izq + 92,  ancho: 96 },
       { clave: "variedad", titulo: "Variedad", x: izq + 190, ancho: 126 },
-      { clave: "kg",       titulo: "Kilos",    x: izq + 318, ancho: 56, align: "right" },
-      { clave: "grado",    titulo: "Grado",    x: izq + 378, ancho: 50, align: "right" },
-      { clave: "color",    titulo: "Color",    x: izq + 430, ancho: 50, align: "right" },
+      { clave: "kg",       titulo: "Kilos",    x: izq + 300, ancho: 54, align: "right" },
+      { clave: "grado",    titulo: "Grado",    x: izq + 358, ancho: 46, align: "right" },
+      { clave: "color",    titulo: "Color",    x: izq + 406, ancho: 46, align: "right" },
+      { clave: "gluconico", titulo: "Glucón.", x: izq + 454, ancho: 46, align: "right" },
     ];
     y = tabla(doc, cols, descargas.map(d => ({
       ticket: d.ticket || "—", hora: d.hora || "—",
       parcela: d.parcela || d.ref_sigpac || "—", variedad: d.variedad || "—",
       kg: nf(d.kg), grado: nf(d.grado, 2), color: nf(d.color, 2),
+      gluconico: nf(d.gluconico, 2),
     })), izq, y);
     doc.moveTo(izq, y).lineTo(izq + ancho, y).lineWidth(0.5).strokeColor(LINEA).stroke();
     y += 5;
     doc.font("Helvetica-Bold").fontSize(9).fillColor(TINTA)
        .text("Total del día", izq, y, { width: 270 })
-       .text(nf(rDia.kg) + " kg", izq + 318, y, { width: 56, align: "right" });
+       .text(nf(rDia.kg) + " kg", izq + 300, y, { width: 54, align: "right" });
     y += 24;
   }
 
@@ -149,21 +153,23 @@ export function construirPDF({ finca, bodega, campania, dia, descargas, campana 
   y = doc.y + 6;
   doc.font("Helvetica").fontSize(9.5).fillColor(TINTA2)
      .text(`${nf(rTot.kg)} kg en ${rTot.descargas} descargas · grado medio ${nf(rTot.grado, 2)}% · `
-         + `color medio ${nf(rTot.color, 2)}`, izq, y, { width: ancho });
+         + `color medio ${nf(rTot.color, 2)} · glucónico medio ${nf(rTot.gluconico, 2)} g/l`,
+       izq, y, { width: ancho });
   y = doc.y + 14;
 
   doc.font("Helvetica-Bold").fontSize(10).fillColor(TINTA).text("Por tipología", izq, y);
   y += 16;
   const cols2 = [
-    { clave: "tipologia", titulo: "Tipología",  x: izq,       ancho: 168 },
-    { clave: "kg",        titulo: "Kilos",      x: izq + 170, ancho: 62, align: "right" },
-    { clave: "pct",       titulo: "% del total", x: izq + 236, ancho: 62, align: "right" },
-    { clave: "grado",     titulo: "Grado medio", x: izq + 302, ancho: 62, align: "right" },
-    { clave: "color",     titulo: "Color medio", x: izq + 368, ancho: 62, align: "right" },
+    { clave: "tipologia", titulo: "Tipología",   x: izq,       ancho: 150 },
+    { clave: "kg",        titulo: "Kilos",       x: izq + 152, ancho: 58, align: "right" },
+    { clave: "pct",       titulo: "% del total", x: izq + 214, ancho: 58, align: "right" },
+    { clave: "grado",     titulo: "Grado medio", x: izq + 276, ancho: 62, align: "right" },
+    { clave: "color",     titulo: "Color medio", x: izq + 342, ancho: 62, align: "right" },
+    { clave: "gluconico", titulo: "Glucón. medio", x: izq + 408, ancho: 66, align: "right" },
   ];
   y = tabla(doc, cols2, tip.map(t => ({
     tipologia: t.tipologia, kg: nf(t.kg), pct: nf(t.pct, 1) + "%",
-    grado: nf(t.grado, 2), color: nf(t.color, 2),
+    grado: nf(t.grado, 2), color: nf(t.color, 2), gluconico: nf(t.gluconico, 2),
   })), izq, y);
 
   // ---------- Quesito ----------
@@ -186,8 +192,9 @@ export function construirPDF({ finca, bodega, campania, dia, descargas, campana 
   }
 
   doc.font("Helvetica").fontSize(8).fillColor(SUAVE)
-     .text("Los kilos son peso neto de báscula. Las medias de grado y color van ponderadas por "
-         + "kilos, no en media simple. La tipología es la variedad tal como la imprime el ticket.",
+     .text("Los kilos son peso neto de báscula. Las medias de grado, color y glucónico van "
+         + "ponderadas por kilos, no en media simple. El ácido glucónico es el indicador de "
+         + "podredumbre. La tipología es la variedad tal como la imprime el ticket.",
        izq, Math.min(y + 6, 770), { width: ancho });
 
   doc.end();

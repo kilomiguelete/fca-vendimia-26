@@ -33,6 +33,10 @@ del conjunto separadas por guion, en el orden en que aparecen).
 Pesada: `kg_bruto`, `kg_tara`, `kg_neto`, `kg_estimado` (el "Peso estimado"
 previo del ticket, que no tiene por que cuadrar con el neto real).
 
+El **acido gluconico** es el indicador de podredumbre, asi que se trata como una
+medida de calidad de pleno derecho: se muestra por descarga, por parcela y por
+tipologia, con media ponderada por kilos, y va tambien en el informe en PDF.
+
 Calidad: `grado_alc_probable` (grado alcoholico probable, % vol), `color`
 (indice de intensidad colorante), `acidez`, `ph`, `gluconico`, y las variantes
 `variedad_sin_gluc` / `grado_alc_probable_sin_gluc` que el ticket calcula

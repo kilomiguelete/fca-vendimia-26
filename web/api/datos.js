@@ -22,6 +22,7 @@ export default conSesion(async (req, res) => {
            t.color::float8           as color,
            t.ph::float8              as ph,
            t.acidez::float8          as acidez,
+           t.gluconico::float8       as gluconico,
            nullif(concat_ws(' - ', t.matricula_1, t.matricula_2), '') as matriculas,
            to_char(t.hora_vendimia, 'HH24:MI') as hora,
            t.temperatura_c::float8   as temperatura,
