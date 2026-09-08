@@ -60,6 +60,11 @@ Reglas de transcripcion:
    impreso, anota la discrepancia en "dudas" con las tres cifras.
 7. "Grado" es el grado alcoholico probable en % vol. "Color" es el indice de
    intensidad colorante.
+7b. La VARIEDAD se transcribe COMPLETA y LITERAL, con sus puntos, espacios y
+   abreviaturas tal como esten impresos (por ejemplo "TINT.TIPO 1 ECOL."). No
+   la traduzcas al nombre botanico, no la normalices, no quites el tipo ni la
+   mencion ecologica: ese codigo determina la clasificacion y el precio que
+   paga la cooperativa, y puede cambiar entre viajes de la misma parcela.
 8. La fecha devuelvela tal como se imprime (por ejemplo "07/09/26").
 
 En "dudas" escribe frases cortas en espanol, una por cada cosa que quien revise

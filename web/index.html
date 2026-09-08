@@ -296,6 +296,15 @@
     <div class="desplaza"><table id="t-parcelas" class="fichas"></table></div>
   </div>
 
+  <div class="panel">
+    <h2>Kilos por variedad</h2>
+    <p class="nota">Variedad tal como la imprime el ticket de báscula. El código de
+      la cooperativa incluye el tipo y la mención ecológica, que determinan
+      clasificación y precio.</p>
+    <div id="g-variedades"></div>
+    <div class="desplaza"><table id="t-variedades" class="fichas"></table></div>
+  </div>
+
   <div class="rejilla-2">
     <div class="panel">
       <h2>Entradas por día</h2>
@@ -641,7 +650,6 @@
         ultima: fechas[fechas.length - 1] || null,
         parcelas: new Set(grupo.map(f => f.ref_sigpac)).size,
         con_hora: grupo.filter(f => f.hora).length,
-        con_temp: grupo.filter(f => f.temperatura != null).length,
       };
     };
     const agrupar = (lista, clave) => {
@@ -656,8 +664,15 @@
         resumen: resumir(grupo),
         parcelas: [...agrupar(grupo, f => f.ref_sigpac)]
           .map(([ref, g]) => ({
-            ref, nombre: g[0].parcela, variedad: g[0].variedad, ...resumir(g),
+            ref, nombre: g[0].parcela,
+            // Una parcela puede entregar mas de una variedad a lo largo de la
+            // campana; se listan todas en vez de quedarse con la primera.
+            variedad: [...new Set(g.map(f => f.variedad).filter(Boolean))].join(" · "),
+            ...resumir(g),
           }))
+          .sort((a, b) => b.kg - a.kg),
+        variedades: [...agrupar(grupo, f => f.variedad || "(sin variedad)")]
+          .map(([variedad, g]) => ({ variedad, ...resumir(g) }))
           .sort((a, b) => b.kg - a.kg),
         dias: [...agrupar(grupo, f => f.fecha)].sort((a, b) => a[0].localeCompare(b[0]))
           .map(([fecha, g]) => ({ fecha, ...resumir(g) })),
@@ -685,13 +700,12 @@
 
     const faltan = [];
     if (r.con_hora < r.descargas) faltan.push(`la hora en ${r.descargas - r.con_hora} de ${plural(r.descargas, "descarga", "descargas")}`);
-    if (r.con_temp < r.descargas) faltan.push(`la temperatura en ${r.descargas - r.con_temp} de ${r.descargas}`);
     const sinNombre = c.parcelas.filter(p => !p.nombre).length;
     if (sinNombre) faltan.push(`el nombre interno de ${plural(sinNombre, "parcela", "parcelas")}`);
     document.getElementById("aviso-cobertura").innerHTML = faltan.length
       ? `<div class="aviso"><span>⚠</span><div><strong>Datos pendientes.</strong>
-         Falta ${faltan.join(", ")}. El ticket de báscula no imprime hora ni temperatura:
-         hay que cruzarlas con el parte de campo o la sonda de la finca.</div></div>`
+         Falta ${faltan.join(", ")}. El ticket de báscula no imprime la hora:
+         se teclea al confirmar, desde el parte de campo.</div></div>`
       : "";
 
     barrasH(document.getElementById("g-parcelas"), c.parcelas.map(p => ({
@@ -717,6 +731,32 @@
           <td class="n" data-etq="Color">${nf(p.color, 2)}</td>
         </tr>`).join("")}</tbody>`;
 
+    const totalKg = c.resumen.kg || 1;
+    barrasH(document.getElementById("g-variedades"), c.variedades.map(v => ({
+      etiqueta: v.variedad,
+      valor: v.kg, texto: nf(v.kg) + " kg",
+      detalle: [
+        `${nf(v.kg)} kg · ${plural(v.descargas, "descarga", "descargas")}`,
+        `${nf(v.kg / totalKg * 100, 1)}% de la campaña`,
+        `Grado ${nf(v.grado, 2)}% · color ${nf(v.color, 2)}`,
+        plural(v.parcelas, "parcela", "parcelas"),
+      ]
+    })), { vacio: "Todavía no hay variedades registradas." });
+
+    document.getElementById("t-variedades").innerHTML =
+      `<thead><tr><th>Variedad</th><th class="n">Kilos</th><th class="n">% campaña</th>
+        <th class="n">Descargas</th><th class="n">Parcelas</th>
+        <th class="n">Grado</th><th class="n">Color</th></tr></thead>
+       <tbody>${c.variedades.map(v => `<tr>
+          <td data-etq="Variedad">${v.variedad}</td>
+          <td class="n" data-etq="Kilos">${nf(v.kg)}</td>
+          <td class="n" data-etq="% campaña">${nf(v.kg / totalKg * 100, 1)}%</td>
+          <td class="n" data-etq="Descargas">${v.descargas}</td>
+          <td class="n" data-etq="Parcelas">${v.parcelas}</td>
+          <td class="n" data-etq="Grado">${nf(v.grado, 2)}</td>
+          <td class="n" data-etq="Color">${nf(v.color, 2)}</td>
+        </tr>`).join("")}</tbody>`;
+
     columnas(document.getElementById("g-dias"), c.dias.map(d => ({
       fecha: d.fecha, valor: d.kg,
       detalle: [`${nf(d.kg)} kg`,
@@ -734,7 +774,7 @@
     document.getElementById("t-descargas").innerHTML =
       `<thead><tr><th>Ticket</th><th>Fecha</th><th>Hora</th><th>Parcela</th><th>Variedad</th>
         <th class="n">Bruto</th><th class="n">Tara</th><th class="n">Neto</th>
-        <th class="n">Grado</th><th class="n">Color</th><th class="n">Tª</th><th>Matrículas</th>
+        <th class="n">Grado</th><th class="n">Color</th><th>Matrículas</th>
         <th></th></tr></thead>
        <tbody>${c.descargas.map(d => `<tr>
           <td data-etq="Ticket">${d.tiene_foto
@@ -749,7 +789,6 @@
           <td class="n" data-etq="Neto">${nf(d.kg)}</td>
           <td class="n" data-etq="Grado">${nf(d.grado, 2)}</td>
           <td class="n" data-etq="Color">${nf(d.color, 2)}</td>
-          <td class="n" data-etq="Tª">${d.temperatura == null ? "—" : nf(d.temperatura, 1)}</td>
           <td class="matriculas" data-etq="Matrículas">${(d.matriculas || "").replace(" - ", "<br>")}</td>
           <td><div class="acciones-fila">
             <button class="icono" data-editar="${d.id}" data-ticket="${d.ticket}"
@@ -892,11 +931,10 @@
     ["kg_bruto", "Bruto (kg)"], ["kg_tara", "Tara (kg)"], ["kg_neto", "Neto (kg)"],
     ["kg_estimado", "Estimado (kg)"], ["grado_alc_probable", "Grado (% vol)"],
     ["color", "Color"], ["acidez", "Acidez"], ["ph", "pH"], ["gluconico", "Glucónico"],
-    ["hora_vendimia", "Hora vendimia"], ["temperatura_c", "Temperatura (°C)"],
-    ["fuente_temperatura", "Fuente Tª"], ["observaciones", "Observaciones"],
+    ["hora_vendimia", "Hora vendimia"], ["observaciones", "Observaciones"],
   ];
   const NUMERICOS = new Set(["kg_bruto", "kg_tara", "kg_neto", "kg_estimado",
-    "grado_alc_probable", "color", "acidez", "ph", "gluconico", "temperatura_c"]);
+    "grado_alc_probable", "color", "acidez", "ph", "gluconico"]);
 
   const enEdicion = new Set();
 

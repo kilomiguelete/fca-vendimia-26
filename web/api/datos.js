@@ -10,7 +10,11 @@ export default conSesion(async (req, res) => {
            concat_ws('/', t.poligono, t.parcela, t.subparcela) as ref_sigpac,
            p.nombre_finca            as parcela,
            coalesce(t.paraje, p.paraje) as paraje,
-           coalesce(p.variedad, t.variedad, '') as variedad,
+           -- La variedad manda tal como la imprime el ticket: el codigo de la
+           -- cooperativa (tipo, ecologico) determina clasificacion y precio, y
+           -- puede cambiar entre viajes de la misma parcela.
+           coalesce(t.variedad, '') as variedad,
+           p.variedad as variedad_parcela,
            p.regimen,
            t.kg_neto                 as kg,
            t.kg_bruto, t.kg_tara,

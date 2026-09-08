@@ -38,18 +38,28 @@ Calidad: `grado_alc_probable` (grado alcoholico probable, % vol), `color`
 `variedad_sin_gluc` / `grado_alc_probable_sin_gluc` que el ticket calcula
 descontando el acido gluconico.
 
-La variedad se imprime con el codigo de la cooperativa (`TINT.TIPO 1 ECOL.`);
-`datos/variedades.csv` lo traduce al nombre real. Todo el viñedo volcado hasta
-ahora es **Garnacha Tintorera ecologica en secano**: al ser uva tintorera, los
-indices de color altos y los grados elevados son lo esperado, no un error de
-transcripcion.
+**La variedad manda tal como la imprime el ticket** (`TINT.TIPO 1 ECOL.`), sin
+traducir ni normalizar: ese codigo incluye el tipo y la mencion ecologica, que
+determinan la clasificacion y el precio que paga la cooperativa, y puede
+cambiar entre viajes de la misma parcela. El dashboard agrupa por el, y el panel
+"Kilos por variedad" reparte la campana en kilos, porcentaje, descargas,
+parcelas y medias de grado y color.
+
+`datos/variedades.csv` traduce el codigo al nombre botanico cuando hace falta
+leerlo: `TINT.TIPO 1 ECOL.` es Garnacha Tintorera ecologica en secano. Al ser
+uva tintorera, los indices de color altos y los grados elevados son lo esperado,
+no un error de transcripcion.
 
 ## Campos que NO trae el ticket
 
-`hora_vendimia`, `temperatura_c` y `fuente_temperatura` **no figuran en el
-ticket de bascula** y quedan vacios hasta cruzarlos con una fuente externa
-(parte de campo, sonda de la finca o estacion meteorologica). `parcela_finca`
-depende del maestro de parcelas. No se rellenan por estimacion.
+`hora_vendimia` **no figura en el ticket de bascula**: se teclea a mano en la
+pantalla de confirmacion, desde el parte de campo. `parcela_finca` depende del
+maestro de parcelas. No se rellenan por estimacion.
+
+La **temperatura** esta retirada de la interfaz porque de momento no hay con que
+medirla. Las columnas `temperatura_c` y `fuente_temperatura` siguen en la base
+de datos y en la exportacion: el dia que haya sonda, volver a mostrarlas es
+anadirlas a la lista CAMPOS de `web/index.html`.
 
 ## Criterios de transcripcion
 
