@@ -69,19 +69,53 @@ depende del maestro de parcelas. No se rellenan por estimacion.
   varia mas de 500 kg entre tickets: eso delata el intercambio.
 - Fechas en ISO (`AAAA-MM-DD`); el ticket las imprime como `DD/MM/AA`.
 
-## Dashboard
+## Dashboard y captura de tickets
 
-`web/` es un sitio estatico sin build: `index.html` mas `datos.js`. Vercel lo
-sirve tal cual desde el repositorio y redespliega en cada push.
+El sitio (`web/`) se despliega en Vercel desde este repositorio y redespliega en
+cada push. Tiene dos mitades:
 
-`datos.js` esta **generado** a partir de los CSV — no se edita a mano. Despues
-de volcar tickets nuevos hay que regenerarlo y volver a commitear:
+- **Dashboard**: kilos y grado por campana, por parcela y por dia, comparativa
+  entre campanas y detalle de descargas.
+- **Captura**: boton para subir el JPG del ticket. La foto se guarda en Supabase
+  Storage, se extraen los campos con la API de Claude y queda como **borrador**.
+  Nada entra al registro sin que una persona lo confirme en pantalla, con la
+  foto al lado.
 
-```sh
-python3 datos/validar.py && python3 web/generar.py
-```
+### Por que la confirmacion no es opcional
 
-El dashboard agrega grado y color como **media ponderada por kilos**, no en
-media simple: una descarga de 500 kg no puede pesar igual que una de 5.000 al
-calcular el grado de la campana. Los campos vacios (hora, temperatura, analitica
-no realizada) se excluyen del calculo en vez de contar como cero.
+El primer ticket volcado traia la tara y el neto intercambiados respecto a lo
+que la finca sabe que pesa el remolque. Una extraccion automatica sin revision
+habria dado esa parcela por 2.380 kg en lugar de 11.500. La extraccion avisa
+cuando la tara supera al neto y cuando la pesada no cuadra, pero quien confirma
+es quien decide.
+
+### Donde vive cada cosa
+
+- **Supabase** es la fuente de verdad de los tickets y del maestro de parcelas.
+- **Los CSV** de `datos/` son la copia versionada: `datos/sincronizar.py` los
+  regenera desde Supabase para que el historial quede en git y el registro se
+  pueda leer y exportar sin depender de ningun servicio.
+- El sitio publicado **no contiene ningun fichero de datos estatico**: la puerta
+  es de navegador, asi que cualquier JSON servido junto al HTML seria
+  descargable sin contrasena. Todo dato pasa por `/api/datos`, que exige cookie.
+
+### Variables de entorno (en Vercel)
+
+| Variable | Para que |
+|---|---|
+| `SUPABASE_URL` | URL del proyecto de Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio; solo la usan las funciones del servidor |
+| `ANTHROPIC_API_KEY` | Lectura de los tickets |
+| `CLAVE_ACCESO` | Contrasena compartida del sitio |
+| `SECRETO_SESION` | Firma de la cookie de sesion (opcional; si falta se usa `CLAVE_ACCESO`) |
+
+`supabase/esquema.sql` crea las tablas, los indices y el bucket privado.
+
+### Agregacion
+
+Las medias de grado y color van **ponderadas por kilos**, no en media simple:
+una descarga de 500 kg no puede pesar igual que una de 5.000 al calcular el
+grado de la campana. Los campos vacios (hora, temperatura, analitica no
+realizada) se excluyen del calculo en vez de contar como cero. El calculo vive
+en un unico sitio, el navegador, para que no haya dos implementaciones que
+puedan divergir.

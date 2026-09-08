@@ -88,6 +88,46 @@
   .pista b { display: block; margin-bottom: 3px; color: var(--ink); }
   .pista span { color: var(--ink-2); }
   footer { margin-top: 40px; color: var(--ink-mute); font-size: 12px; }
+  .boton {
+    font: inherit; font-weight: 500; padding: 9px 16px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--borde); background: var(--surface-1); color: var(--ink);
+  }
+  .boton:hover { border-color: var(--ink-mute); }
+  .boton.principal { background: var(--serie-1); border-color: var(--serie-1); color: #fff; }
+  .boton.principal:hover { filter: brightness(1.07); }
+  .boton:disabled { opacity: .55; cursor: default; }
+  .puerta {
+    position: fixed; inset: 0; background: var(--plano); z-index: 20;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .puerta .caja { background: var(--surface-1); border: 1px solid var(--borde);
+    border-radius: 14px; padding: 30px 32px; width: 100%; max-width: 360px; }
+  .puerta h2 { margin: 0 0 6px; font-size: 17px; }
+  .puerta p { margin: 0 0 20px; color: var(--ink-2); font-size: 13px; }
+  .puerta input {
+    font: inherit; width: 100%; padding: 10px 12px; border-radius: 9px; margin-bottom: 12px;
+    border: 1px solid var(--borde); background: var(--plano); color: var(--ink);
+  }
+  .error { color: #d03b3b; font-size: 12.5px; margin-top: 10px; }
+  .revision { border-left: 3px solid var(--serie-2); }
+  .borrador { border-top: 1px solid var(--grid); padding-top: 20px; margin-top: 20px; }
+  .borrador:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  .par { display: grid; grid-template-columns: minmax(240px, 340px) 1fr; gap: 22px; }
+  @media (max-width: 720px) { .par { grid-template-columns: 1fr; } }
+  .par img { width: 100%; border-radius: 10px; border: 1px solid var(--borde); }
+  .campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+  .campo label { display: block; color: var(--ink-2); font-size: 11.5px; margin-bottom: 3px; }
+  .campo input {
+    font: inherit; width: 100%; padding: 7px 9px; border-radius: 7px;
+    border: 1px solid var(--borde); background: var(--plano); color: var(--ink);
+  }
+  .campo input:focus { outline: 2px solid var(--serie-1); outline-offset: -1px; }
+  .campo.marcado input { border-color: var(--aviso); background: color-mix(in srgb, var(--aviso) 8%, var(--plano)); }
+  .duda { display: flex; gap: 8px; font-size: 12.5px; color: var(--ink-2);
+    background: color-mix(in srgb, var(--aviso) 10%, transparent);
+    border-radius: 7px; padding: 8px 11px; margin-bottom: 7px; }
+  .acciones { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
+  .oculto { display: none !important; }
   a { color: inherit; }
 </style>
 </head>
@@ -98,10 +138,24 @@
       <h1>Vendimia · <span id="finca"></span></h1>
       <div class="sub" id="subtitulo"></div>
     </div>
-    <label class="sub">Campaña
-      <select id="selector"></select>
-    </label>
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+      <label class="sub">Campaña
+        <select id="selector"></select>
+      </label>
+      <button class="boton principal" id="b-subir">Subir ticket</button>
+      <input type="file" id="fichero" accept="image/*" capture="environment" multiple class="oculto">
+    </div>
   </header>
+
+  <div id="estado-subida"></div>
+
+  <div class="panel revision oculto" id="panel-revision">
+    <h2>Tickets por revisar (<span id="n-borradores">0</span>)</h2>
+    <p class="nota">Comprueba los campos contra la foto y confirma. Nada entra al
+      registro sin pasar por aquí. Los campos marcados en ámbar son los que la
+      lectura no dio por seguros.</p>
+    <div id="borradores"></div>
+  </div>
 
   <div class="tarjetas" id="tarjetas"></div>
   <div id="aviso-cobertura"></div>
@@ -142,10 +196,19 @@
 </div>
 <div class="pista" id="pista"></div>
 
-<script src="datos.js"></script>
+<div class="puerta" id="puerta">
+  <div class="caja">
+    <h2>Vendimia · Finca Casa Aparicio</h2>
+    <p>Registro de tickets de báscula. Introduce la contraseña para entrar.</p>
+    <input type="password" id="clave" placeholder="Contraseña" autocomplete="current-password">
+    <button class="boton principal" id="b-entrar" style="width:100%">Entrar</button>
+    <div class="error oculto" id="error-clave"></div>
+  </div>
+</div>
+
 <script>
 (function () {
-  const D = window.DATOS;
+  let D = { finca: "", bodega: "", campanias: [] };
   const NS = "http://www.w3.org/2000/svg";
   const pista = document.getElementById("pista");
   const SERIES = ["--serie-1", "--serie-2", "--serie-3"];
@@ -388,6 +451,55 @@
     barrasH(lienzo, items, {});
   }
 
+  /* --- Agregacion --- */
+  function agregar(datos) {
+    const filas = (datos.filas || []).slice()
+      .sort((a, b) => (a.campania + a.fecha + a.ticket).localeCompare(b.campania + b.fecha + b.ticket));
+
+    // Ponderada por kilos: una descarga de 500 kg no puede pesar igual que una
+    // de 5.000 al calcular el grado de la campana.
+    const ponderada = (grupo, campo) => {
+      const pares = grupo.filter(f => f[campo] != null && f.kg).map(f => [f[campo], f.kg]);
+      if (!pares.length) return null;
+      const total = pares.reduce((s, [, k]) => s + k, 0);
+      if (!total) return null;
+      return Math.round(pares.reduce((s, [v, k]) => s + v * k, 0) / total * 100) / 100;
+    };
+    const resumir = grupo => {
+      const fechas = grupo.map(f => f.fecha).filter(Boolean).sort();
+      return {
+        kg: grupo.reduce((s, f) => s + (f.kg || 0), 0),
+        descargas: grupo.length,
+        grado: ponderada(grupo, "grado"),
+        color: ponderada(grupo, "color"),
+        primera: fechas[0] || null,
+        ultima: fechas[fechas.length - 1] || null,
+        parcelas: new Set(grupo.map(f => f.ref_sigpac)).size,
+        con_hora: grupo.filter(f => f.hora).length,
+        con_temp: grupo.filter(f => f.temperatura != null).length,
+      };
+    };
+    const agrupar = (lista, clave) => {
+      const m = new Map();
+      lista.forEach(f => { const k = clave(f); if (!m.has(k)) m.set(k, []); m.get(k).push(f); });
+      return m;
+    };
+
+    return [...agrupar(filas, f => f.campania)].sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([campania, grupo]) => ({
+        campania,
+        resumen: resumir(grupo),
+        parcelas: [...agrupar(grupo, f => f.ref_sigpac)]
+          .map(([ref, g]) => ({
+            ref, nombre: g[0].parcela, variedad: g[0].variedad, ...resumir(g),
+          }))
+          .sort((a, b) => b.kg - a.kg),
+        dias: [...agrupar(grupo, f => f.fecha)].sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([fecha, g]) => ({ fecha, ...resumir(g) })),
+        descargas: grupo,
+      }));
+  }
+
   /* --- Composicion --- */
   function pintar(campania) {
     const c = D.campanias.find(x => x.campania === campania) || D.campanias[0];
@@ -468,17 +580,219 @@
         </tr>`).join("")}</tbody>`;
   }
 
-  document.getElementById("finca").textContent = D.finca;
-  document.getElementById("subtitulo").textContent = "Tickets de báscula · " + D.bodega;
-  document.getElementById("pie").textContent =
-    "Los kilos son peso neto de báscula. Las medias de grado y color van ponderadas por kilos, "
-    + "no en media simple: una descarga de 500 kg no pesa lo mismo que una de 5.000.";
+  /* --- Servidor --- */
+  async function pedir(url, opciones) {
+    const r = await fetch(url, opciones);
+    const cuerpo = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(cuerpo.error || `Error ${r.status}`);
+    return cuerpo;
+  }
 
-  const sel = document.getElementById("selector");
-  sel.innerHTML = D.campanias.map(c => `<option>${c.campania}</option>`).join("");
-  sel.value = D.campanias[D.campanias.length - 1].campania;
-  sel.addEventListener("change", () => pintar(sel.value));
-  pintar(sel.value);
+  function render() {
+    document.getElementById("finca").textContent = D.finca;
+    document.getElementById("subtitulo").textContent = "Tickets de báscula · " + D.bodega;
+    document.getElementById("pie").textContent =
+      "Los kilos son peso neto de báscula. Las medias de grado y color van ponderadas por kilos, "
+      + "no en media simple: una descarga de 500 kg no pesa lo mismo que una de 5.000.";
+    const sel = document.getElementById("selector");
+    if (!D.campanias.length) { vacio(document.getElementById("g-parcelas"), "Todavía no hay tickets confirmados."); return; }
+    const previa = sel.value;
+    sel.innerHTML = D.campanias.map(c => `<option>${c.campania}</option>`).join("");
+    sel.value = D.campanias.some(c => c.campania === previa)
+      ? previa : D.campanias[D.campanias.length - 1].campania;
+    pintar(sel.value);
+  }
+
+  async function cargarDatos() {
+    // Solo desde la API: la puerta es de navegador, asi que un fichero de datos
+    // estatico en el sitio seria descargable sin contrasena.
+    const datos = await pedir("/api/datos");
+    D = { finca: datos.finca, bodega: datos.bodega, campanias: agregar(datos) };
+    render();
+  }
+
+  /* --- Subida de tickets --- */
+  const estadoSubida = document.getElementById("estado-subida");
+  function avisar(texto, tono) {
+    estadoSubida.innerHTML = texto
+      ? `<div class="aviso" style="border-left-color: var(--${tono || "serie-1"})"><span>${
+          tono === "aviso" ? "⚠" : "•"}</span><div>${texto}</div></div>`
+      : "";
+  }
+
+  // Las fotos de movil pesan varios MB; se reducen antes de enviarlas para que
+  // entren en el limite de la funcion y la lectura sea mas rapida.
+  function reducir(fichero) {
+    return new Promise((ok, mal) => {
+      const img = new Image();
+      img.onload = () => {
+        const lado = 1800, escala = Math.min(1, lado / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * escala);
+        c.height = Math.round(img.height * escala);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        ok(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+      };
+      img.onerror = () => mal(new Error("No se pudo leer la imagen."));
+      img.src = URL.createObjectURL(fichero);
+    });
+  }
+
+  const bSubir = document.getElementById("b-subir");
+  const fichero = document.getElementById("fichero");
+  bSubir.addEventListener("click", () => fichero.click());
+  fichero.addEventListener("change", async () => {
+    const ficheros = [...fichero.files];
+    fichero.value = "";
+    if (!ficheros.length) return;
+    bSubir.disabled = true;
+    let hechos = 0, fallos = [];
+    for (const f of ficheros) {
+      avisar(`Leyendo ticket ${hechos + 1} de ${ficheros.length}…`);
+      try {
+        const base64 = await reducir(f);
+        await pedir("/api/subir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64, tipo: "image/jpeg" }),
+        });
+        hechos++;
+      } catch (e) {
+        fallos.push(`${f.name}: ${e.message}`);
+      }
+    }
+    bSubir.disabled = false;
+    avisar(fallos.length
+      ? `${hechos} ticket(s) leído(s). No se pudo con: ${fallos.join("; ")}`
+      : `${hechos} ticket(s) leído(s). Revísalos abajo antes de confirmar.`,
+      fallos.length ? "aviso" : null);
+    await cargarBorradores();
+  });
+
+  /* --- Revision de borradores --- */
+  const CAMPOS = [
+    ["ticket", "Nº ticket"], ["fecha", "Fecha"], ["campania", "Campaña"],
+    ["poligono", "Polígono"], ["parcela", "Parcela"], ["subparcela", "Subparcela"],
+    ["paraje", "Paraje"], ["variedad", "Variedad"],
+    ["matricula_1", "Matrícula 1"], ["matricula_2", "Matrícula 2"],
+    ["kg_bruto", "Bruto (kg)"], ["kg_tara", "Tara (kg)"], ["kg_neto", "Neto (kg)"],
+    ["kg_estimado", "Estimado (kg)"], ["grado_alc_probable", "Grado (% vol)"],
+    ["color", "Color"], ["acidez", "Acidez"], ["ph", "pH"], ["gluconico", "Glucónico"],
+    ["hora_vendimia", "Hora vendimia"], ["temperatura_c", "Temperatura (°C)"],
+    ["fuente_temperatura", "Fuente Tª"], ["observaciones", "Observaciones"],
+  ];
+  const NUMERICOS = new Set(["kg_bruto", "kg_tara", "kg_neto", "kg_estimado",
+    "grado_alc_probable", "color", "acidez", "ph", "gluconico", "temperatura_c"]);
+
+  async function cargarBorradores() {
+    const panel = document.getElementById("panel-revision");
+    let borradores = [];
+    try {
+      borradores = (await pedir("/api/tickets?estado=borrador")).tickets;
+    } catch { panel.classList.add("oculto"); return; }
+    document.getElementById("n-borradores").textContent = borradores.length;
+    panel.classList.toggle("oculto", !borradores.length);
+
+    document.getElementById("borradores").innerHTML = borradores.map(b => `
+      <div class="borrador" data-id="${b.id}">
+        <div class="par">
+          <div>${b.jpg_url
+            ? `<a href="${b.jpg_url}" target="_blank" rel="noopener"><img src="${b.jpg_url}" alt="Ticket ${b.ticket || ""}"></a>`
+            : '<p class="vacio">Sin foto</p>'}</div>
+          <div>
+            ${(b.dudas || []).map(d => `<div class="duda"><span>⚠</span><span>${d}</span></div>`).join("")}
+            <div class="campos">
+              ${CAMPOS.map(([c, etq]) => `
+                <div class="campo ${b[c] == null || b[c] === "" ? "marcado" : ""}">
+                  <label for="${b.id}-${c}">${etq}</label>
+                  <input id="${b.id}-${c}" data-campo="${c}" value="${b[c] == null ? "" : String(b[c]).replace(/"/g, "&quot;")}">
+                </div>`).join("")}
+            </div>
+            <div class="acciones">
+              <button class="boton principal" data-accion="confirmar">Confirmar y añadir al registro</button>
+              <button class="boton" data-accion="descartar">Descartar</button>
+              <span class="error oculto"></span>
+            </div>
+          </div>
+        </div>
+      </div>`).join("");
+
+    document.querySelectorAll(".borrador").forEach(nodo => {
+      const error = nodo.querySelector(".error");
+      nodo.querySelectorAll("[data-accion]").forEach(boton => {
+        boton.addEventListener("click", async () => {
+          error.classList.add("oculto");
+          const accion = boton.dataset.accion;
+          const campos = {};
+          nodo.querySelectorAll("[data-campo]").forEach(i => {
+            const v = i.value.trim();
+            campos[i.dataset.campo] = v === "" ? null : (NUMERICOS.has(i.dataset.campo) ? Number(v) : v);
+          });
+          const malos = Object.entries(campos).filter(([c, v]) => NUMERICOS.has(c) && v != null && Number.isNaN(v));
+          if (accion === "confirmar" && malos.length) {
+            error.textContent = "No es un número: " + malos.map(([c]) => c).join(", ");
+            error.classList.remove("oculto");
+            return;
+          }
+          nodo.querySelectorAll("button").forEach(b => (b.disabled = true));
+          try {
+            await pedir("/api/confirmar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: nodo.dataset.id, accion, campos }),
+            });
+            await cargarBorradores();
+            await cargarDatos();
+          } catch (e) {
+            error.textContent = e.message;
+            error.classList.remove("oculto");
+            nodo.querySelectorAll("button").forEach(b => (b.disabled = false));
+          }
+        });
+      });
+    });
+  }
+
+  /* --- Puerta --- */
+  const puerta = document.getElementById("puerta");
+  const errorClave = document.getElementById("error-clave");
+  async function entrar() {
+    const clave = document.getElementById("clave").value;
+    errorClave.classList.add("oculto");
+    try {
+      await pedir("/api/entrar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clave }),
+      });
+      await abrir();
+    } catch (e) {
+      errorClave.textContent = e.message;
+      errorClave.classList.remove("oculto");
+    }
+  }
+  document.getElementById("b-entrar").addEventListener("click", entrar);
+  document.getElementById("clave").addEventListener("keydown", e => { if (e.key === "Enter") entrar(); });
+
+  async function abrir() {
+    puerta.classList.add("oculto");
+    document.getElementById("selector").addEventListener("change", e => pintar(e.target.value));
+    await cargarDatos();
+    await cargarBorradores();
+  }
+
+  (async () => {
+    let estado = {};
+    try { estado = await pedir("/api/entrar"); } catch {}
+    if (estado.dentro) { await abrir(); return; }
+    if (estado.configurado === false) {
+      errorClave.textContent = "El servidor aún no tiene configuradas las variables de "
+        + "entorno (Supabase y la clave de API). Hasta entonces no se puede entrar.";
+      errorClave.classList.remove("oculto");
+    }
+    document.getElementById("clave").focus();
+  })();
 })();
 </script>
 </body>

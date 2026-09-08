@@ -1,0 +1,148 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
+import { conSesion, supabase, fechaISO } from "./_comun.js";
+
+const numero = () => z.number().nullable();
+const texto = () => z.string().nullable();
+
+const EsquemaTicket = z.object({
+  ticket: texto(),
+  fecha: texto(),
+  campania: texto(),
+  provincia: texto(),
+  municipio: texto(),
+  poligono: texto(),
+  parcela: texto(),
+  subparcela: texto(),
+  paraje: texto(),
+  variedad: texto(),
+  incidencia: texto(),
+  matricula_1: texto(),
+  matricula_2: texto(),
+  kg_bruto: numero(),
+  kg_tara: numero(),
+  kg_neto: numero(),
+  kg_estimado: numero(),
+  grado_alc_probable: numero(),
+  color: numero(),
+  acidez: numero(),
+  ph: numero(),
+  gluconico: numero(),
+  dudas: z.array(z.string()),
+});
+
+const INSTRUCCIONES = `Eres un ayudante que transcribe tickets de bascula de entrada de uva de una
+cooperativa vinicola espanola. Devuelves exactamente lo que el ticket imprime.
+
+Reglas de transcripcion:
+
+1. Transcribe literalmente. No estimes, no deduzcas y no completes de memoria
+   ningun valor que no puedas leer en la imagen.
+2. Numeros: el ticket usa el punto como separador de MILES en los pesos
+   ("13.880" son 13880 kilos) y la coma como separador DECIMAL en la analitica
+   ("17,63" son 17.63). Devuelve siempre numeros normalizados: pesos como
+   enteros en kilos, decimales con punto.
+3. Un valor impreso como 0 en acidez, pH o glucónico significa "no analizado",
+   no un cero real: devuelve null en ese campo y anadelo a "dudas".
+4. Campo vacio, tachado o ilegible: devuelve null y describelo en "dudas"
+   (por ejemplo "el paraje esta en blanco" o "la matricula del remolque no se
+   lee, puede ser BGX o BGY").
+5. Asigna cada peso al campo que le corresponde SEGUN LA ETIQUETA IMPRESA en el
+   ticket, aunque el resultado te parezca raro. Si el ticket etiqueta 11.500
+   como "Tara", devuelve kg_tara = 11500. No reordenes los valores por tu
+   cuenta: quien revisa necesita ver lo que pone el papel.
+6. Comprueba la aritmetica de la pesada: si bruto menos tara no da el neto
+   impreso, anota la discrepancia en "dudas" con las tres cifras.
+7. "Grado" es el grado alcoholico probable en % vol. "Color" es el indice de
+   intensidad colorante.
+8. La fecha devuelvela tal como se imprime (por ejemplo "07/09/26").
+
+En "dudas" escribe frases cortas en espanol, una por cada cosa que quien revise
+deba mirar con atencion. Si no hay ninguna, devuelve una lista vacia.`;
+
+export default conSesion(async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Método no permitido" });
+    return;
+  }
+  const { base64, tipo } = req.body || {};
+  if (!base64) {
+    res.status(400).json({ error: "No ha llegado ninguna imagen." });
+    return;
+  }
+  const mime = tipo === "image/png" ? "image/png" : "image/jpeg";
+  const bytes = Buffer.from(base64, "base64");
+  if (bytes.length > 5 * 1024 * 1024) {
+    res.status(413).json({ error: "La imagen pesa más de 5 MB. Vuelve a hacer la foto." });
+    return;
+  }
+
+  const cliente = new Anthropic();
+  const respuesta = await cliente.messages.parse({
+    model: "claude-opus-5",
+    max_tokens: 16000,
+    thinking: { type: "adaptive" },
+    system: INSTRUCCIONES,
+    messages: [{
+      role: "user",
+      content: [
+        { type: "image", source: { type: "base64", media_type: mime, data: base64 } },
+        { type: "text", text: "Transcribe este ticket de báscula." },
+      ],
+    }],
+    output_config: { format: zodOutputFormat(EsquemaTicket, "ticket") },
+  });
+
+  if (respuesta.stop_reason === "refusal") {
+    res.status(422).json({ error: "El modelo no ha podido procesar esta imagen." });
+    return;
+  }
+  const t = respuesta.parsed_output;
+  const fecha = fechaISO(t.fecha);
+
+  const db = supabase();
+  const ruta = `${fecha || "sin-fecha"}/${t.ticket || Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const { error: errSubida } = await db.storage
+    .from("tickets")
+    .upload(ruta, bytes, { contentType: mime, upsert: false });
+  if (errSubida) throw new Error("No se pudo guardar la foto: " + errSubida.message);
+
+  const dudas = [...t.dudas];
+  // La comprobacion que nos habria salvado el primer ticket: en un remolque de
+  // vendimia la tara no suele superar a la uva.
+  if (t.kg_tara != null && t.kg_neto != null && t.kg_tara > t.kg_neto) {
+    dudas.push(`El ticket etiqueta ${t.kg_tara} kg como tara y ${t.kg_neto} kg como neto. `
+      + "Comprueba que no estén intercambiados antes de confirmar.");
+  }
+
+  const { data, error } = await db.from("tickets").insert({
+    estado: "borrador",
+    jpg_ruta: ruta,
+    ticket: t.ticket,
+    fecha,
+    campania: t.campania,
+    poligono: t.poligono,
+    parcela: t.parcela,
+    subparcela: t.subparcela,
+    paraje: t.paraje,
+    variedad: t.variedad,
+    incidencia: t.incidencia,
+    matricula_1: t.matricula_1,
+    matricula_2: t.matricula_2,
+    kg_bruto: t.kg_bruto,
+    kg_tara: t.kg_tara,
+    kg_neto: t.kg_neto,
+    kg_estimado: t.kg_estimado,
+    grado_alc_probable: t.grado_alc_probable,
+    color: t.color,
+    acidez: t.acidez,
+    ph: t.ph,
+    gluconico: t.gluconico,
+    dudas,
+    extraccion: t,
+  }).select().single();
+  if (error) throw new Error("No se pudo guardar el borrador: " + error.message);
+
+  res.status(200).json({ borrador: data });
+});
