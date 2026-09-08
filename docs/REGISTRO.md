@@ -147,6 +147,14 @@ Desde la tabla de descargas, cada ticket registrado tiene **Editar** y **Borrar*
   `update tickets set estado = 'confirmado' where ticket = '...';`
   Para eliminarlo de verdad, `delete from tickets where id = ...`.
 
+### Limite de campos nulables
+
+La API rechaza un esquema con mas de 16 campos de tipo union, y cada campo
+nulable cuenta como uno. Por eso en el esquema de extraccion los campos de
+texto **no** son nulables (la cadena vacia ya significa "ausente") y solo lo son
+los nueve numericos, donde vacio y cero no son lo mismo: un 0 impreso en acidez
+o pH significa "no analizado". Al anadir campos nuevos, mantener esa regla.
+
 ### Coste de la lectura
 
 Cada ticket cuesta del orden de tres centimos con `effort: "low"` (unos siete

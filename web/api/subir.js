@@ -4,7 +4,10 @@ import { z } from "zod";
 import { conSesion, bd, fechaISO } from "./_comun.js";
 
 const numero = () => z.number().nullable();
-const texto = () => z.string().nullable();
+// Sin nulo: la API limita a 16 los campos con tipo union, y los nulables cuentan.
+// En texto, la cadena vacia ya expresa "ausente" sin ambiguedad; en los numericos
+// no vale, porque un 0 impreso significa "no analizado" y hay que distinguirlo.
+const texto = () => z.string();
 
 const EsquemaTicket = z.object({
   ticket: texto(),
@@ -45,9 +48,10 @@ Reglas de transcripcion:
    enteros en kilos, decimales con punto.
 3. Un valor impreso como 0 en acidez, pH o glucónico significa "no analizado",
    no un cero real: devuelve null en ese campo y anadelo a "dudas".
-4. Campo vacio, tachado o ilegible: devuelve null y describelo en "dudas"
-   (por ejemplo "el paraje esta en blanco" o "la matricula del remolque no se
-   lee, puede ser BGX o BGY").
+4. Campo vacio, tachado o ilegible: en los campos de texto devuelve la cadena
+   vacia ""; en los numericos devuelve null. Y describelo en "dudas" (por
+   ejemplo "el paraje esta en blanco" o "la matricula del remolque no se lee,
+   puede ser BGX o BGY").
 5. Asigna cada peso al campo que le corresponde SEGUN LA ETIQUETA IMPRESA en el
    ticket, aunque el resultado te parezca raro. Si el ticket etiqueta 11.500
    como "Tara", devuelve kg_tara = 11500. No reordenes los valores por tu
@@ -120,14 +124,16 @@ export default conSesion(async (req, res) => {
       + `imprime ${kn} de neto.`);
   }
 
+  const vacio = v => { const x = (v ?? "").trim(); return x === "" ? null : x; };
+
   const sql = bd();
   const [fila] = await sql`
     insert into tickets (estado, jpg, jpg_tipo, ticket, fecha, campania, poligono, parcela,
       subparcela, paraje, variedad, incidencia, matricula_1, matricula_2, kg_bruto, kg_tara,
       kg_neto, kg_estimado, grado_alc_probable, color, acidez, ph, gluconico, dudas, extraccion)
-    values ('borrador', decode(${base64}, 'base64'), ${mime}, ${t.ticket}, ${fecha},
-      ${t.campania}, ${t.poligono}, ${t.parcela}, ${t.subparcela}, ${t.paraje}, ${t.variedad},
-      ${t.incidencia}, ${t.matricula_1}, ${t.matricula_2}, ${t.kg_bruto}, ${t.kg_tara},
+    values ('borrador', decode(${base64}, 'base64'), ${mime}, ${vacio(t.ticket)}, ${fecha},
+      ${vacio(t.campania)}, ${vacio(t.poligono)}, ${vacio(t.parcela)}, ${vacio(t.subparcela)}, ${vacio(t.paraje)}, ${vacio(t.variedad)},
+      ${vacio(t.incidencia)}, ${vacio(t.matricula_1)}, ${vacio(t.matricula_2)}, ${t.kg_bruto}, ${t.kg_tara},
       ${t.kg_neto}, ${t.kg_estimado}, ${t.grado_alc_probable}, ${t.color}, ${t.acidez},
       ${t.ph}, ${t.gluconico}, ${JSON.stringify(dudas)}::jsonb, ${JSON.stringify(t)}::jsonb)
     returning id, ticket, fecha`;
