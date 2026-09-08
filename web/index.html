@@ -128,6 +128,12 @@
     border-radius: 7px; padding: 8px 11px; margin-bottom: 7px; }
   .acciones { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
   .oculto { display: none !important; }
+  .borrar {
+    font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--borde); background: transparent; color: var(--ink-2);
+  }
+  .borrar:hover { border-color: #d03b3b; color: #d03b3b; }
+  .borrar:disabled { opacity: .5; cursor: default; }
   a { color: inherit; }
 </style>
 </head>
@@ -153,7 +159,8 @@
     <h2>Tickets por revisar (<span id="n-borradores">0</span>)</h2>
     <p class="nota">Comprueba los campos contra la foto y confirma. Nada entra al
       registro sin pasar por aquí. Los campos marcados en ámbar son los que la
-      lectura no dio por seguros.</p>
+      lectura no dio por seguros. Aquí aparecen también los tickets ya
+      registrados que abras para corregir.</p>
     <div id="borradores"></div>
   </div>
 
@@ -571,7 +578,8 @@
     document.getElementById("t-descargas").innerHTML =
       `<thead><tr><th>Ticket</th><th>Fecha</th><th>Hora</th><th>Parcela</th><th>Variedad</th>
         <th class="n">Bruto</th><th class="n">Tara</th><th class="n">Neto</th>
-        <th class="n">Grado</th><th class="n">Color</th><th class="n">Tª</th><th>Matrículas</th></tr></thead>
+        <th class="n">Grado</th><th class="n">Color</th><th class="n">Tª</th><th>Matrículas</th>
+        <th></th></tr></thead>
        <tbody>${c.descargas.map(d => `<tr>
           <td>${d.ticket}</td><td>${fechaLarga(d.fecha)}</td>
           <td>${d.hora || "<span style='color:var(--ink-mute)'>—</span>"}</td>
@@ -580,8 +588,41 @@
           <td class="n">${nf(d.kg)}</td>
           <td class="n">${nf(d.grado, 2)}</td><td class="n">${nf(d.color, 2)}</td>
           <td class="n">${d.temperatura == null ? "—" : nf(d.temperatura, 1)}</td>
-          <td>${d.matriculas}</td>
+          <td>${d.matriculas || ""}</td>
+          <td style="white-space:nowrap">
+            <button class="borrar" data-editar="${d.id}" data-ticket="${d.ticket}">Editar</button>
+            <button class="borrar" data-borrar="${d.id}" data-ticket="${d.ticket}">Borrar</button>
+          </td>
         </tr>`).join("")}</tbody>`;
+
+    document.querySelectorAll("[data-editar]").forEach(boton => {
+      boton.addEventListener("click", async () => {
+        enEdicion.add(Number(boton.dataset.editar));
+        await cargarBorradores();
+        document.getElementById("panel-revision").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    document.querySelectorAll("[data-borrar]").forEach(boton => {
+      boton.addEventListener("click", async () => {
+        const num = boton.dataset.ticket;
+        if (!confirm(`¿Quitar el ticket ${num} del registro?\n\n`
+          + "Sale del dashboard y de la exportación, pero la fila y la foto se "
+          + "conservan en la base de datos, así que se puede recuperar.")) return;
+        boton.disabled = true;
+        try {
+          await pedir("/api/confirmar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: Number(boton.dataset.borrar), accion: "descartar" }),
+          });
+          await cargarDatos();
+        } catch (e) {
+          alert("No se pudo borrar: " + e.message);
+          boton.disabled = false;
+        }
+      });
+    });
   }
 
   /* --- Servidor --- */
@@ -689,11 +730,20 @@
   const NUMERICOS = new Set(["kg_bruto", "kg_tara", "kg_neto", "kg_estimado",
     "grado_alc_probable", "color", "acidez", "ph", "gluconico", "temperatura_c"]);
 
+  const enEdicion = new Set();
+
   async function cargarBorradores() {
     const panel = document.getElementById("panel-revision");
     let borradores = [];
     try {
       borradores = (await pedir("/api/tickets?estado=borrador")).tickets;
+      // Los ya registrados que se han abierto para corregir se piden aparte y
+      // se muestran en la misma bandeja.
+      for (const id of enEdicion) {
+        if (borradores.some(b => b.id === id)) continue;
+        const { tickets } = await pedir(`/api/tickets?id=${id}`);
+        if (tickets[0]) borradores.push(tickets[0]);
+      }
     } catch { panel.classList.add("oculto"); return; }
     document.getElementById("n-borradores").textContent = borradores.length;
     panel.classList.toggle("oculto", !borradores.length);
@@ -714,8 +764,10 @@
                 </div>`).join("")}
             </div>
             <div class="acciones">
-              <button class="boton principal" data-accion="confirmar">Confirmar y añadir al registro</button>
-              <button class="boton" data-accion="descartar">Descartar</button>
+              <button class="boton principal" data-accion="confirmar">${
+                b.estado === "borrador" ? "Confirmar y añadir al registro" : "Guardar correcciones"}</button>
+              <button class="boton" data-accion="${b.estado === "borrador" ? "descartar" : "cancelar"}">${
+                b.estado === "borrador" ? "Descartar" : "Cancelar"}</button>
               <span class="error oculto"></span>
             </div>
           </div>
@@ -728,6 +780,11 @@
         boton.addEventListener("click", async () => {
           error.classList.add("oculto");
           const accion = boton.dataset.accion;
+          if (accion === "cancelar") {
+            enEdicion.delete(Number(nodo.dataset.id));
+            await cargarBorradores();
+            return;
+          }
           const campos = {};
           nodo.querySelectorAll("[data-campo]").forEach(i => {
             const v = i.value.trim();
@@ -746,6 +803,7 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id: nodo.dataset.id, accion, campos }),
             });
+            enEdicion.delete(Number(nodo.dataset.id));
             await cargarBorradores();
             await cargarDatos();
           } catch (e) {

@@ -5,7 +5,7 @@ import { conSesion, bd } from "./_comun.js";
 export default conSesion(async (req, res) => {
   const sql = bd();
   const filas = await sql`
-    select t.ticket, t.fecha, t.campania,
+    select t.id, t.ticket, t.fecha, t.campania,
            concat_ws('/', t.poligono, t.parcela, t.subparcela) as ref_sigpac,
            p.nombre_finca            as parcela,
            coalesce(t.paraje, p.paraje) as paraje,

@@ -121,6 +121,18 @@ comprobacion, es ruido que se acaba ignorando.
 `db/esquema.sql` crea las tablas y los indices; `db/datos_iniciales.sql` carga
 lo ya volcado a mano.
 
+### Corregir y quitar tickets
+
+Desde la tabla de descargas, cada ticket registrado tiene **Editar** y **Borrar**.
+
+- **Editar** lo devuelve a la bandeja de revision con su foto, para corregir una
+  lectura equivocada; al guardar vuelve al registro. Cancelar no toca nada.
+- **Borrar** es un borrado reversible: el ticket pasa a `descartado` y sale del
+  dashboard y de la exportacion, pero la fila y la foto siguen en la base. Un
+  descarte por error se deshace con
+  `update tickets set estado = 'confirmado' where ticket = '...';`
+  Para eliminarlo de verdad, `delete from tickets where id = ...`.
+
 ### Coste de la lectura
 
 Cada ticket cuesta del orden de tres centimos con `effort: "low"` (unos siete

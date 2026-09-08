@@ -22,8 +22,16 @@ export default conSesion(async (req, res) => {
   const sql = bd();
 
   if (accion === "descartar") {
-    await sql`update tickets set estado = 'descartado' where id = ${id}`;
-    res.status(200).json({ ok: true });
+    // Vale igual para un borrador y para un ticket ya confirmado. Es un borrado
+    // reversible: la fila y la foto se conservan, solo salen del registro, de
+    // modo que un descarte por error se deshace con un update.
+    const filas = await sql`update tickets set estado = 'descartado', confirmado_en = null
+                            where id = ${id} returning id, ticket`;
+    if (!filas.length) {
+      res.status(404).json({ error: "Ese ticket ya no existe." });
+      return;
+    }
+    res.status(200).json({ ok: true, ticket: filas[0].ticket });
     return;
   }
 

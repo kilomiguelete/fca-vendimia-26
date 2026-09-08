@@ -5,7 +5,19 @@ import { conSesion, bd } from "./_comun.js";
 export default conSesion(async (req, res) => {
   const sql = bd();
   const estado = req.query?.estado;
-  const tickets = estado
+  const id = req.query?.id ? Number(req.query.id) : null;
+  if (id !== null && !Number.isInteger(id)) {
+    res.status(400).json({ error: "Identificador no válido." });
+    return;
+  }
+  const tickets = id !== null
+    ? await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket, fecha, campania,
+                  poligono, parcela, subparcela, paraje, variedad, matricula_1, matricula_2,
+                  kg_bruto, kg_tara, kg_neto, kg_estimado, grado_alc_probable, color, acidez,
+                  ph, gluconico, to_char(hora_vendimia, 'HH24:MI') as hora_vendimia,
+                  temperatura_c, fuente_temperatura, observaciones, dudas, creado_en
+                from tickets where id = ${id}`
+    : estado
     ? await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket, fecha, campania,
                   poligono, parcela, subparcela, paraje, variedad, matricula_1, matricula_2,
                   kg_bruto, kg_tara, kg_neto, kg_estimado, grado_alc_probable, color, acidez,
