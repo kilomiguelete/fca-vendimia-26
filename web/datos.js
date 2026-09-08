@@ -6,7 +6,7 @@ window.DATOS = {
   {
    "campania": "2026/2027",
    "resumen": {
-    "kg": 2380,
+    "kg": 11500,
     "descargas": 1,
     "grado": 17.63,
     "color": 20.51,
@@ -21,7 +21,7 @@ window.DATOS = {
      "ref": "019/00142/X",
      "nombre": null,
      "variedad": "Garnacha Tintorera",
-     "kg": 2380,
+     "kg": 11500,
      "descargas": 1,
      "grado": 17.63,
      "color": 20.51,
@@ -35,7 +35,7 @@ window.DATOS = {
    "dias": [
     {
      "fecha": "2026-09-07",
-     "kg": 2380,
+     "kg": 11500,
      "descargas": 1,
      "grado": 17.63,
      "color": 20.51,
@@ -58,9 +58,9 @@ window.DATOS = {
      "variedad_ticket": "TINT.TIPO 1 ECOL.",
      "regimen": "secano",
      "ecologico": true,
-     "kg": 2380,
+     "kg": 11500,
      "kg_bruto": 13880,
-     "kg_tara": 11500,
+     "kg_tara": 2380,
      "grado": 17.63,
      "color": 20.51,
      "ph": null,
@@ -69,7 +69,7 @@ window.DATOS = {
      "matriculas": "E06194BHK - E7498BGX",
      "hora": null,
      "temperatura": null,
-     "observaciones": "acidez y pH impresos como 0 (no analizados); kg_estimado 900 frente a 2380 netos reales",
+     "observaciones": "la bascula imprime Tara 11.500 y Peso neto 2.380; segun la finca la tara real del conjunto son 2.380 kg, luego lo vendimiado son 11.500 kg (13.880 - 2.380). Ticket con los dos valores intercambiados, pendiente de confirmar con los proximos. Acidez y pH impresos como 0 (no analizados); kg_estimado 900",
      "jpg": "2026-09-07_260214.jpg"
     }
    ]

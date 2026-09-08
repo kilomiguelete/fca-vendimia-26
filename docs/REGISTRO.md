@@ -61,6 +61,12 @@ depende del maestro de parcelas. No se rellenan por estimacion.
 - **Valores impresos como `0`** en acidez y pH significan "no analizado", no
   cero real: se dejan vacios y se anota en `observaciones`.
 - Campo ilegible o ausente → vacio, y se anota en `observaciones`.
+- **Tara y neto**: la bascula de la cooperativa ha impreso al menos un ticket con
+  los dos valores intercambiados (etiqueta como "Tara" lo que en realidad es la
+  uva). En el CSV mandan la tara real del conjunto y el neto que se deduce de
+  ella; lo que imprime el ticket queda anotado en `observaciones`. Como la tara
+  de un mismo conjunto es practicamente constante, `datos/validar.py` avisa si
+  varia mas de 500 kg entre tickets: eso delata el intercambio.
 - Fechas en ISO (`AAAA-MM-DD`); el ticket las imprime como `DD/MM/AA`.
 
 ## Dashboard
