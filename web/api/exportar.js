@@ -17,7 +17,8 @@ const celda = v => {
 export default conSesion(async (req, res) => {
   const sql = bd();
   const filas = await sql`
-    select t.ticket, t.fecha, t.campania, t.poligono, t.parcela, t.subparcela,
+    select t.ticket, to_char(t.fecha, 'YYYY-MM-DD') as fecha,
+           t.campania, t.poligono, t.parcela, t.subparcela,
            coalesce(t.paraje, p.paraje) as paraje, p.nombre_finca as parcela_finca,
            t.variedad, t.incidencia, t.matricula_1, t.matricula_2,
            t.kg_bruto, t.kg_tara, t.kg_neto, t.kg_estimado,

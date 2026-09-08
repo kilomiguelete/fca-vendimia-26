@@ -293,12 +293,14 @@
     v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d,
                                 useGrouping: "always" });
   const plural = (n, singular, prural) => `${n} ${n === 1 ? singular : prural}`;
+  // Se queda con AAAA-MM-DD aunque llegue un instante ISO completo.
+  const soloFecha = f => String(f || "").slice(0, 10);
   const fechaCorta = f => {
-    const [a, m, d] = f.split("-");
+    const [, m, d] = soloFecha(f).split("-");
     return `${d}/${m}`;
   };
   const fechaLarga = f => {
-    const [a, m, d] = f.split("-");
+    const [a, m, d] = soloFecha(f).split("-");
     return `${d}/${m}/${a}`;
   };
   const nombreParcela = p => p.nombre || p.ref;

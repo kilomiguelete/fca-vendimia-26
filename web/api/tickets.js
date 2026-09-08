@@ -11,20 +11,23 @@ export default conSesion(async (req, res) => {
     return;
   }
   const tickets = id !== null
-    ? await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket, fecha, campania,
+    ? await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket,
+                  to_char(fecha, 'YYYY-MM-DD') as fecha, campania,
                   poligono, parcela, subparcela, paraje, variedad, matricula_1, matricula_2,
                   kg_bruto, kg_tara, kg_neto, kg_estimado, grado_alc_probable, color, acidez,
                   ph, gluconico, to_char(hora_vendimia, 'HH24:MI') as hora_vendimia,
                   temperatura_c, fuente_temperatura, observaciones, dudas, creado_en
                 from tickets where id = ${id}`
     : estado
-    ? await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket, fecha, campania,
+    ? await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket,
+                  to_char(fecha, 'YYYY-MM-DD') as fecha, campania,
                   poligono, parcela, subparcela, paraje, variedad, matricula_1, matricula_2,
                   kg_bruto, kg_tara, kg_neto, kg_estimado, grado_alc_probable, color, acidez,
                   ph, gluconico, to_char(hora_vendimia, 'HH24:MI') as hora_vendimia, temperatura_c, fuente_temperatura,
                   observaciones, dudas, creado_en
                 from tickets where estado = ${estado} order by creado_en desc`
-    : await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket, fecha, campania,
+    : await sql`select id, estado, jpg_tipo is not null as tiene_foto, ticket,
+                  to_char(fecha, 'YYYY-MM-DD') as fecha, campania,
                   poligono, parcela, subparcela, paraje, variedad, matricula_1, matricula_2,
                   kg_bruto, kg_tara, kg_neto, kg_estimado, grado_alc_probable, color, acidez,
                   ph, gluconico, to_char(hora_vendimia, 'HH24:MI') as hora_vendimia, temperatura_c, fuente_temperatura,
