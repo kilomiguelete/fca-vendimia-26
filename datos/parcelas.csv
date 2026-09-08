@@ -1,2 +1,2 @@
-poligono,parcela,subparcela,nombre_finca,paraje,variedad,superficie_ha,notas
-019,00142,X,,,TINT.TIPO 1 ECOL.,,"nombre interno pendiente de asignar"
+poligono,parcela,subparcela,nombre_finca,paraje,variedad,regimen,ecologico,superficie_ha,notas
+019,00142,X,,,Garnacha Tintorera,secano,si,,"nombre interno pendiente de asignar"

@@ -10,10 +10,12 @@ C-L-M, CIF F02004414). Agricultor: **11252 - FINCA CASA APARICIO S.L.**
 
 ## Estructura
 
-- `albaranes/jpg/` — imagenes originales (nombre: `AAAA-MM-DD_<nº ticket>.jpg`).
+- `albaranes/jpg/` — imagenes originales de los tickets, subidas a mano
+  (nombre: `AAAA-MM-DD_<nº ticket>.jpg`, que es lo que enlaza con `fuente_jpg`).
 - `datos/albaranes.csv` — una fila por ticket de bascula, transcrito literal.
 - `datos/parcelas.csv` — maestro de parcelas: SIGPAC (poligono/parcela/subparcela)
-  → nombre interno de la finca, paraje, variedad y superficie.
+  → nombre interno de la finca, paraje, variedad, regimen y superficie.
+- `datos/variedades.csv` — codigo de variedad del ticket → variedad real.
 - `datos/validar.py` — comprobaciones del volcado (`python3 datos/validar.py`).
 
 ## Campos que trae el ticket
@@ -31,9 +33,16 @@ del conjunto separadas por guion, en el orden en que aparecen).
 Pesada: `kg_bruto`, `kg_tara`, `kg_neto`, `kg_estimado` (el "Peso estimado"
 previo del ticket, que no tiene por que cuadrar con el neto real).
 
-Calidad: `grado`, `color`, `acidez`, `ph`, `gluconico`, y las variantes
-`variedad_sin_gluc` / `grado_sin_gluc` que el ticket calcula descontando el
-acido gluconico.
+Calidad: `grado_alc_probable` (grado alcoholico probable, % vol), `color`
+(indice de intensidad colorante), `acidez`, `ph`, `gluconico`, y las variantes
+`variedad_sin_gluc` / `grado_alc_probable_sin_gluc` que el ticket calcula
+descontando el acido gluconico.
+
+La variedad se imprime con el codigo de la cooperativa (`TINT.TIPO 1 ECOL.`);
+`datos/variedades.csv` lo traduce al nombre real. Todo el viñedo volcado hasta
+ahora es **Garnacha Tintorera ecologica en secano**: al ser uva tintorera, los
+indices de color altos y los grados elevados son lo esperado, no un error de
+transcripcion.
 
 ## Campos que NO trae el ticket
 
