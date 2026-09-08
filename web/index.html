@@ -791,8 +791,8 @@
     try { estado = await pedir("/api/entrar"); } catch {}
     if (estado.dentro) { await abrir(); return; }
     if (estado.configurado === false) {
-      errorClave.textContent = "El servidor aún no tiene configuradas las variables de "
-        + "entorno (la base de datos y la clave de API). Hasta entonces no se puede entrar.";
+      errorClave.textContent = "Faltan variables de entorno en Vercel: "
+        + (estado.faltan || []).join(", ") + ". Hasta que estén puestas no se puede entrar.";
       errorClave.classList.remove("oculto");
     }
     document.getElementById("clave").focus();

@@ -3,11 +3,15 @@ import crypto from "node:crypto";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    // Informa si faltan variables de entorno, para que la puerta lo diga en vez
-    // de fallar al intentar entrar.
-    const configurado = Boolean(process.env.CLAVE_ACCESO && process.env.ANTHROPIC_API_KEY
-      && (process.env.DATABASE_URL || process.env.POSTGRES_URL));
-    res.status(200).json({ dentro: sesionValida(req), configurado });
+    // Informa que variables de entorno faltan, para que la puerta lo diga en vez
+    // de fallar al intentar entrar. Solo nombres, nunca valores; y el repositorio
+    // es publico, asi que no se revela nada que no se sepa ya.
+    const faltan = [
+      ["DATABASE_URL", process.env.DATABASE_URL || process.env.POSTGRES_URL],
+      ["ANTHROPIC_API_KEY", process.env.ANTHROPIC_API_KEY],
+      ["CLAVE_ACCESO", process.env.CLAVE_ACCESO],
+    ].filter(([, v]) => !v).map(([n]) => n);
+    res.status(200).json({ dentro: sesionValida(req), configurado: !faltan.length, faltan });
     return;
   }
   if (req.method !== "POST") {
