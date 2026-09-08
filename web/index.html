@@ -93,6 +93,7 @@
   .icono:hover { border-color: var(--ink-mute); color: var(--ink); }
   .icono.quitar:hover { border-color: #d03b3b; color: #d03b3b; }
   .icono:disabled { opacity: .5; cursor: default; }
+
   .llave { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: baseline; }
   .leyenda { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: 12.5px; color: var(--ink-2); }
   .pista {
@@ -198,6 +199,53 @@
   }
   .cerrar-visor:hover { background: rgba(0,0,0,.7); border-color: #fff; }
   a { color: inherit; }
+
+  /* --- Tablet --- */
+  @media (max-width: 1024px) {
+    .envoltura { padding: 24px 16px 56px; }
+    .panel { padding: 18px 16px; }
+  }
+
+  /* --- Movil: las tablas pasan a fichas, una por fila --- */
+  @media (max-width: 760px) {
+    .envoltura { padding: 18px 12px 48px; }
+    h1 { font-size: 19px; }
+    header { align-items: stretch; gap: 12px; }
+    header > div:last-child { justify-content: space-between; }
+    .panel { padding: 16px 14px; }
+    .tarjetas { grid-template-columns: 1fr 1fr; }
+    .tarjeta .valor { font-size: 23px; }
+    .desplaza { overflow-x: visible; }
+    .fichas thead { display: none; }
+    .fichas, .fichas tbody, .fichas tr, .fichas td { display: block; width: 100%; }
+    .fichas tr {
+      border: 1px solid var(--borde); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 10px;
+    }
+    .fichas td {
+      display: flex; gap: 14px; justify-content: space-between; align-items: baseline;
+      border: none; padding: 5px 0; white-space: normal; text-align: right;
+    }
+    .fichas td::before {
+      content: attr(data-etq); color: var(--ink-2); font-size: 12px;
+      text-align: left; flex: none;
+    }
+    .fichas td:empty, .fichas td[data-etq=""] { display: none; }
+    .fichas td.n { text-align: right; }
+    .fichas .matriculas { min-width: 0; }
+    .fichas .acciones-fila { justify-content: flex-end; }
+    .compacta { font-size: 13.5px; }
+    .compacta th:first-child, .compacta td:first-child { padding-left: 0; }
+    .campos { grid-template-columns: 1fr 1fr; }
+    .cajon { width: 78vw; max-width: 300px; }
+    /* Objetivos tactiles de 44px: esto se usa con el movil en la mano, en el campo. */
+    .hamburguesa { width: 44px; height: 44px; }
+    .boton { padding: 12px 18px; }
+    .icono { width: 36px; height: 36px; font-size: 15px; }
+    .cerrar-visor { width: 46px; height: 46px; }
+    select, .puerta input, .campo input, .cajon button { padding: 11px 12px; }
+    .enlace-ticket { padding: 4px 0; }
+  }
 </style>
 </head>
 <body>
@@ -245,7 +293,7 @@
     <h2>Kilos por parcela</h2>
     <p class="nota">Peso neto entregado en la campaña, por referencia SIGPAC.</p>
     <div id="g-parcelas"></div>
-    <div class="desplaza"><table id="t-parcelas"></table></div>
+    <div class="desplaza"><table id="t-parcelas" class="fichas"></table></div>
   </div>
 
   <div class="rejilla-2">
@@ -270,7 +318,7 @@
   <div class="panel">
     <h2>Descargas</h2>
     <p class="nota">Cada ticket de báscula volcado, en orden de entrada.</p>
-    <div class="desplaza"><table id="t-descargas" class="compacta"></table></div>
+    <div class="desplaza"><table id="t-descargas" class="compacta fichas"></table></div>
   </div>
 
   </div><!-- fin vista-panel -->
@@ -281,7 +329,7 @@
       <p class="nota">Cada parcela que ha aparecido en algún ticket, con su
         referencia SIGPAC. Ponle el nombre con el que la llamáis en la finca y
         pasará a usarse en todo el dashboard. Se guarda al salir del campo.</p>
-      <div class="desplaza"><table id="t-parcelas-edit"></table></div>
+      <div class="desplaza"><table id="t-parcelas-edit" class="fichas"></table></div>
     </div>
   </div>
 
@@ -337,6 +385,9 @@
     if (padre) padre.appendChild(n);
     return n;
   }
+  const anchoDe = (destino, porDefecto) =>
+    Math.max(Math.round(destino.getBoundingClientRect().width) || porDefecto, 260);
+
   function svg(destino, ancho, alto) {
     destino.innerHTML = "";
     const s = el("svg", {
@@ -375,9 +426,15 @@
   /* --- Barras horizontales: magnitud comparada entre categorias --- */
   function barrasH(destino, items, opciones) {
     if (!items.length) return vacio(destino, opciones.vacio || "Sin datos.");
-    const paso = 38, margen = { top: 8, right: 74, bottom: 26, left: 148 };
+    const ancho = anchoDe(destino, 900);
+    const estrecho = ancho < 520;
+    const paso = estrecho ? 34 : 38;
+    const margen = {
+      top: 8, bottom: 26,
+      right: estrecho ? 58 : 74,
+      left: Math.min(estrecho ? 104 : 148, Math.round(ancho * 0.38)),
+    };
     const alto = margen.top + items.length * paso + margen.bottom;
-    const ancho = 900;
     const s = svg(destino, ancho, alto);
     const x0 = margen.left, x1 = ancho - margen.right;
     const max = Math.max(...items.map(i => i.valor), 0);
@@ -385,9 +442,11 @@
     const tope = ticks[ticks.length - 1] || 1;
     const escala = v => x0 + (v / tope) * (x1 - x0);
 
-    ticks.forEach(t => {
+    // En pantallas estrechas se alternan las marcas para que no se solapen.
+    ticks.forEach((t, i) => {
       el("line", { x1: escala(t), x2: escala(t), y1: margen.top, y2: alto - margen.bottom,
                    stroke: "var(--grid)", "stroke-width": 1 }, s);
+      if (estrecho && i % 2) return;
       const tx = el("text", { x: escala(t), y: alto - margen.bottom + 15, "text-anchor": "middle",
                               fill: "var(--ink-mute)", "font-size": 11 }, s);
       tx.textContent = nf(t);
@@ -421,7 +480,7 @@
   /* --- Columnas por fecha: magnitud a lo largo de la campana --- */
   function columnas(destino, items, opciones) {
     if (!items.length) return vacio(destino, opciones.vacio || "Sin datos.");
-    const ancho = 520, alto = 240;
+    const ancho = anchoDe(destino, 520), alto = 240;
     const margen = { top: 22, right: 14, bottom: 34, left: 52 };
     const s = svg(destino, ancho, alto);
     const y0 = alto - margen.bottom, y1 = margen.top;
@@ -446,7 +505,8 @@
       const d = `M${cx - grosor / 2},${y0} V${y + r} a${r},${r} 0 0 1 ${r},${-r}
                  H${cx + grosor / 2 - r} a${r},${r} 0 0 1 ${r},${r} V${y0} Z`;
       el("path", { d, fill: `var(${SERIES[0]})` }, s);
-      if (items.length <= 12) {
+      const cada = Math.ceil(items.length / Math.max(Math.floor(ancho / 52), 2));
+      if (i % cada === 0) {
         const tx = el("text", { x: cx, y: y0 + 15, "text-anchor": "middle",
                                 fill: "var(--ink-mute)", "font-size": 11 }, s);
         tx.textContent = fechaCorta(item.fecha);
@@ -463,7 +523,7 @@
   function serieGrado(destino, items, opciones) {
     const puntos = items.filter(i => i.valor != null);
     if (!puntos.length) return vacio(destino, opciones.vacio || "Sin analítica todavía.");
-    const ancho = 520, alto = 240;
+    const ancho = anchoDe(destino, 520), alto = 240;
     const margen = { top: 22, right: 22, bottom: 34, left: 52 };
     const s = svg(destino, ancho, alto);
     const y0 = alto - margen.bottom, y1 = margen.top;
@@ -496,7 +556,8 @@
                      fill: `var(${SERIES[0]})`, stroke: "var(--surface-1)", "stroke-width": 2 }, s);
       const zona = el("circle", { cx: escalaX(p.i), cy: escalaY(p.valor), r: 16, fill: "transparent" }, s);
       conPista(zona, fechaLarga(p.fecha), p.detalle);
-      if (items.length <= 12) {
+      const cada = Math.ceil(items.length / Math.max(Math.floor(ancho / 52), 2));
+      if (p.i % cada === 0) {
         const tx = el("text", { x: escalaX(p.i), y: y0 + 15, "text-anchor": "middle",
                                 fill: "var(--ink-mute)", "font-size": 11 }, s);
         tx.textContent = fechaCorta(p.fecha);
@@ -648,10 +709,12 @@
       `<thead><tr><th>Parcela</th><th>SIGPAC</th><th>Variedad</th>
         <th class="n">Kilos</th><th class="n">Descargas</th><th class="n">Grado</th><th class="n">Color</th></tr></thead>
        <tbody>${c.parcelas.map(p => `<tr>
-          <td>${p.nombre || "<span style='color:var(--ink-mute)'>sin nombre</span>"}</td>
-          <td>${p.ref}</td><td>${p.variedad}</td>
-          <td class="n">${nf(p.kg)}</td><td class="n">${p.descargas}</td>
-          <td class="n">${nf(p.grado, 2)}</td><td class="n">${nf(p.color, 2)}</td>
+          <td data-etq="Parcela">${p.nombre || "<span style='color:var(--ink-mute)'>sin nombre</span>"}</td>
+          <td data-etq="SIGPAC">${p.ref}</td><td data-etq="Variedad">${p.variedad}</td>
+          <td class="n" data-etq="Kilos">${nf(p.kg)}</td>
+          <td class="n" data-etq="Descargas">${p.descargas}</td>
+          <td class="n" data-etq="Grado">${nf(p.grado, 2)}</td>
+          <td class="n" data-etq="Color">${nf(p.color, 2)}</td>
         </tr>`).join("")}</tbody>`;
 
     columnas(document.getElementById("g-dias"), c.dias.map(d => ({
@@ -674,16 +737,20 @@
         <th class="n">Grado</th><th class="n">Color</th><th class="n">Tª</th><th>Matrículas</th>
         <th></th></tr></thead>
        <tbody>${c.descargas.map(d => `<tr>
-          <td>${d.tiene_foto
+          <td data-etq="Ticket">${d.tiene_foto
             ? `<button class="enlace-ticket" data-foto="${d.id}" data-ticket="${d.ticket}">${d.ticket}</button>`
-            : d.ticket}</td><td>${fechaCortaAnno(d.fecha)}</td>
-          <td>${d.hora || "<span style='color:var(--ink-mute)'>—</span>"}</td>
-          <td>${d.parcela || d.ref_sigpac}</td><td>${d.variedad}</td>
-          <td class="n">${nf(d.kg_bruto)}</td><td class="n">${nf(d.kg_tara)}</td>
-          <td class="n">${nf(d.kg)}</td>
-          <td class="n">${nf(d.grado, 2)}</td><td class="n">${nf(d.color, 2)}</td>
-          <td class="n">${d.temperatura == null ? "—" : nf(d.temperatura, 1)}</td>
-          <td class="matriculas">${(d.matriculas || "").replace(" - ", "<br>")}</td>
+            : d.ticket}</td>
+          <td data-etq="Fecha">${fechaCortaAnno(d.fecha)}</td>
+          <td data-etq="Hora">${d.hora || "<span style='color:var(--ink-mute)'>—</span>"}</td>
+          <td data-etq="Parcela">${d.parcela || d.ref_sigpac}</td>
+          <td data-etq="Variedad">${d.variedad}</td>
+          <td class="n" data-etq="Bruto">${nf(d.kg_bruto)}</td>
+          <td class="n" data-etq="Tara">${nf(d.kg_tara)}</td>
+          <td class="n" data-etq="Neto">${nf(d.kg)}</td>
+          <td class="n" data-etq="Grado">${nf(d.grado, 2)}</td>
+          <td class="n" data-etq="Color">${nf(d.color, 2)}</td>
+          <td class="n" data-etq="Tª">${d.temperatura == null ? "—" : nf(d.temperatura, 1)}</td>
+          <td class="matriculas" data-etq="Matrículas">${(d.matriculas || "").replace(" - ", "<br>")}</td>
           <td><div class="acciones-fila">
             <button class="icono" data-editar="${d.id}" data-ticket="${d.ticket}"
                     title="Editar el ticket ${d.ticket}" aria-label="Editar el ticket ${d.ticket}">✎</button>
@@ -925,6 +992,19 @@
     });
   }
 
+  // Los graficos se dibujan al ancho del hueco, asi que hay que rehacerlos
+  // cuando cambia: girar el movil, o pasar de una seccion a otra.
+  let anchoPrevio = window.innerWidth, temporizador;
+  window.addEventListener("resize", () => {
+    if (window.innerWidth === anchoPrevio) return;
+    anchoPrevio = window.innerWidth;
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => {
+      const sel = document.getElementById("selector");
+      if (sel.value && D.campanias.length) pintar(sel.value);
+    }, 180);
+  });
+
   /* --- Visor de la foto del ticket --- */
   const visor = document.getElementById("visor");
   function cerrarVisor() { visor.classList.add("oculto"); visor.innerHTML = ""; }
@@ -991,19 +1071,19 @@
       <tbody>${parcelas.map(p => {
         const ref = [p.poligono, p.parcela, p.subparcela].filter(Boolean).join("/");
         return `<tr>
-          <td>${ref}</td>
-          <td><input data-poligono="${p.poligono}" data-parcela="${p.parcela}"
+          <td data-etq="SIGPAC">${ref}</td>
+          <td data-etq="Nombre"><input data-poligono="${p.poligono}" data-parcela="${p.parcela}"
                      data-subparcela="${p.subparcela || ""}"
                      value="${(p.nombre_finca || "").replace(/"/g, "&quot;")}"
                      placeholder="sin nombre" style="font:inherit; width:100%; padding:7px 9px;
                      border-radius:7px; border:1px solid var(--borde);
                      background:var(--plano); color:var(--ink)">
               <span class="guardado oculto">guardado</span></td>
-          <td>${p.variedad || "—"}</td>
-          <td class="n">${nf(p.kg)}</td>
-          <td class="n">${p.descargas}</td>
-          <td class="n">${p.campanias}</td>
-          <td>${p.ultima ? fechaLarga(p.ultima) : "—"}</td>
+          <td data-etq="Variedad">${p.variedad || "—"}</td>
+          <td class="n" data-etq="Kilos">${nf(p.kg)}</td>
+          <td class="n" data-etq="Descargas">${p.descargas}</td>
+          <td class="n" data-etq="Campañas">${p.campanias}</td>
+          <td data-etq="Última entrada">${p.ultima ? fechaLarga(p.ultima) : "—"}</td>
         </tr>`;
       }).join("")}</tbody>`;
 
