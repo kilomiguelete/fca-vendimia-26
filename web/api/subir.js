@@ -102,6 +102,12 @@ export default conSesion(async (req, res) => {
     return;
   }
   const t = respuesta.parsed_output;
+  if (!t) {
+    res.status(422).json({
+      error: "No se pudo leer el ticket en esa imagen. Prueba con una foto más nítida.",
+    });
+    return;
+  }
   const fecha = fechaISO(t.fecha);
 
   const dudas = [...t.dudas];
