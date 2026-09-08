@@ -437,12 +437,50 @@
     if (!items.length) return vacio(destino, opciones.vacio || "Sin datos.");
     const ancho = anchoDe(destino, 900);
     const estrecho = ancho < 520;
-    const paso = estrecho ? 34 : 38;
-    const margen = {
-      top: 8, bottom: 26,
-      right: estrecho ? 58 : 74,
-      left: Math.min(estrecho ? 104 : 148, Math.round(ancho * 0.38)),
-    };
+
+    // Con una sola categoria la barra no compara nada: ocupa el 100% por
+    // definicion y repite lo que ya dice la tabla. En pantalla estrecha, donde
+    // el sitio es caro, se omite.
+    if (estrecho && items.length < 2) { destino.innerHTML = ""; return; }
+
+    return estrecho ? barrasApiladas(destino, items, ancho) : barrasAlLado(destino, items, ancho);
+  }
+
+  /* Movil: etiqueta y valor en una linea, barra a todo el ancho debajo.
+     Una etiqueta lateral se comeria un tercio del ancho y partiria los nombres. */
+  function barrasApiladas(destino, items, ancho) {
+    const paso = 50, margen = { top: 4, bottom: 4 };
+    const alto = margen.top + items.length * paso + margen.bottom;
+    const s = svg(destino, ancho, alto);
+    const max = Math.max(...items.map(i => i.valor), 0) || 1;
+
+    items.forEach((item, i) => {
+      const y = margen.top + i * paso;
+      const etq = el("text", { x: 0, y: y + 12, fill: "var(--ink-2)", "font-size": 12.5 }, s);
+      etq.textContent = item.etiqueta;
+      const val = el("text", { x: ancho, y: y + 12, "text-anchor": "end",
+                               fill: "var(--ink)", "font-size": 12.5,
+                               style: "font-variant-numeric: tabular-nums" }, s);
+      val.textContent = item.texto;
+
+      const grosor = 14, yb = y + 22;
+      el("rect", { x: 0, y: yb, width: ancho, height: grosor, rx: 4,
+                   fill: "var(--grid)" }, s);
+      const largo = Math.max((item.valor / max) * ancho, 3);
+      const r = Math.min(4, largo / 2);
+      el("path", { d: `M0,${yb} H${largo - r} a${r},${r} 0 0 1 ${r},${r}
+                       V${yb + grosor - r} a${r},${r} 0 0 1 ${-r},${r} H0 Z`,
+                   fill: `var(${item.color || SERIES[0]})` }, s);
+
+      const zona = el("rect", { x: 0, y, width: ancho, height: paso, fill: "transparent" }, s);
+      conPista(zona, item.etiqueta, item.detalle);
+    });
+  }
+
+  /* Escritorio: etiqueta a la izquierda, eje con marcas. */
+  function barrasAlLado(destino, items, ancho) {
+    const paso = 38, margen = { top: 8, right: 74, bottom: 26,
+                                left: Math.min(148, Math.round(ancho * 0.32)) };
     const alto = margen.top + items.length * paso + margen.bottom;
     const s = svg(destino, ancho, alto);
     const x0 = margen.left, x1 = ancho - margen.right;
@@ -451,11 +489,9 @@
     const tope = ticks[ticks.length - 1] || 1;
     const escala = v => x0 + (v / tope) * (x1 - x0);
 
-    // En pantallas estrechas se alternan las marcas para que no se solapen.
-    ticks.forEach((t, i) => {
+    ticks.forEach(t => {
       el("line", { x1: escala(t), x2: escala(t), y1: margen.top, y2: alto - margen.bottom,
                    stroke: "var(--grid)", "stroke-width": 1 }, s);
-      if (estrecho && i % 2) return;
       const tx = el("text", { x: escala(t), y: alto - margen.bottom + 15, "text-anchor": "middle",
                               fill: "var(--ink-mute)", "font-size": 11 }, s);
       tx.textContent = nf(t);
@@ -467,10 +503,9 @@
       const grosor = 22, y = margen.top + i * paso + (paso - grosor) / 2;
       const largo = Math.max(escala(item.valor) - x0, 2);
       const r = Math.min(4, largo);
-      // extremo redondeado al final, escuadrado en la linea base
-      const d = `M${x0},${y} H${x0 + largo - r} a${r},${r} 0 0 1 ${r},${r}
-                 V${y + grosor - r} a${r},${r} 0 0 1 ${-r},${r} H${x0} Z`;
-      el("path", { d, fill: `var(${item.color || SERIES[0]})` }, s);
+      el("path", { d: `M${x0},${y} H${x0 + largo - r} a${r},${r} 0 0 1 ${r},${r}
+                       V${y + grosor - r} a${r},${r} 0 0 1 ${-r},${r} H${x0} Z`,
+                   fill: `var(${item.color || SERIES[0]})` }, s);
 
       const etq = el("text", { x: margen.left - 10, y: y + grosor / 2 + 4, "text-anchor": "end",
                                fill: "var(--ink-2)", "font-size": 12.5 }, s);
