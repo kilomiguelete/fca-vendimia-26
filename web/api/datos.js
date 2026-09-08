@@ -16,6 +16,7 @@ export default conSesion(async (req, res) => {
            coalesce(t.variedad, '') as variedad,
            p.variedad as variedad_parcela,
            p.regimen,
+           p.superficie_ha::float8 as superficie_ha,
            t.kg_neto                 as kg,
            t.kg_bruto, t.kg_tara,
            t.grado_alc_probable::float8 as grado,

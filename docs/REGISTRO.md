@@ -149,6 +149,25 @@ El menu de hamburguesa (arriba a la izquierda) tiene dos secciones:
 En la tabla de descargas, el numero de ticket es un enlace que abre la foto
 original de la que se saco la informacion.
 
+### Pantalla de confirmacion
+
+El formulario va en bloques -Pesada, Calidad, Identificacion, Vendimia- con lo
+que mas se equivoca arriba, y los campos numericos abren teclado decimal en el
+movil. La resta de la pesada se comprueba **mientras se escribe**: si
+`bruto - tara` no da el neto, los tres campos se marcan en rojo y lo dice, en
+vez de esperar a que se pulse confirmar.
+
+Ahi mismo se puede **bautizar la parcela**: si el ticket trae una referencia
+SIGPAC sin nombre en el maestro, el campo esta en el propio formulario y se
+guarda al confirmar, sin ir a la seccion Parcelas.
+
+### Superficie y rendimiento
+
+La seccion Parcelas tiene la superficie en hectareas, editable. Con ella el
+dashboard calcula **kg/ha**, que es lo unico que hace comparables dos parcelas
+de distinto tamano y una misma parcela entre campanas. Sin superficie no se
+inventa un rendimiento: se deja en blanco y se avisa en "Datos pendientes".
+
 ### Filtro por dia
 
 Una campana ronda las sesenta descargas, asi que la tabla no las lista todas de
