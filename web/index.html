@@ -216,6 +216,9 @@
     font: inherit; width: 100%; padding: 7px 9px; border-radius: 7px;
     border: 1px solid var(--borde); background: var(--plano); color: var(--ink);
   }
+  .celda-editable.falta {
+    border-color: var(--aviso); background: color-mix(in srgb, var(--aviso) 8%, var(--plano));
+  }
   .enlace-ticket {
     font: inherit; padding: 0; border: none; background: none; cursor: pointer;
     color: var(--serie-1); text-decoration: underline; text-underline-offset: 2px;
@@ -355,8 +358,19 @@
   </div>
 
   <div class="panel">
-    <h2>Comparativa entre campañas</h2>
-    <p class="nota">Kilos de cada parcela, año a año. El grado va en el detalle al pasar el ratón.</p>
+    <div class="cabecera-panel">
+      <div>
+        <h2>Comparativa entre campañas</h2>
+        <p class="nota" id="nota-comparativa">Cada parcela, año a año. El resto de
+          datos van en el detalle al pasar el ratón.</p>
+      </div>
+      <label class="sub">Medida
+        <select id="medida-comparativa">
+          <option value="kg">Kilos</option>
+          <option value="ha">Kilos por hectárea</option>
+        </select>
+      </label>
+    </div>
     <div id="g-campanias"></div>
   </div>
 
@@ -383,7 +397,9 @@
       <h2>Parcelas</h2>
       <p class="nota">Cada parcela que ha aparecido en algún ticket, con su
         referencia SIGPAC. Ponle el nombre con el que la llamáis en la finca y
-        pasará a usarse en todo el dashboard. Se guarda al salir del campo.</p>
+        su superficie, y pasarán a usarse en todo el dashboard. Se guarda al
+        salir del campo, así que se puede ir completando poco a poco.</p>
+      <div id="pendientes-parcelas"></div>
       <div class="desplaza"><table id="t-parcelas-edit" class="fichas"></table></div>
     </div>
   </div>
@@ -666,7 +682,10 @@
   }
 
   /* --- Comparativa entre campanas: una serie de color por campana --- */
+  let medidaComparativa = "kg";
+
   function comparativa(destino) {
+    const porHa = medidaComparativa === "ha";
     if (D.campanias.length < 2) {
       const c = D.campanias[0];
       destino.innerHTML = `<p class="vacio">Solo hay una campaña registrada (${c ? c.campania : "—"}).
@@ -690,20 +709,33 @@
     destino.appendChild(lienzo);
 
     const items = [];
+    let sinHa = 0;
     refs.forEach(ref => {
       D.campanias.forEach((c, i) => {
         const p = c.parcelas.find(x => x.ref === ref);
         if (!p) return;
+        // En kg/ha, una parcela sin superficie no se dibuja: no se inventa.
+        if (porHa && !p.rendimiento) { sinHa++; return; }
         items.push({
           etiqueta: `${nombres[ref]} · ${c.campania}`,
-          valor: p.kg, texto: nf(p.kg) + " kg",
+          valor: porHa ? p.rendimiento : p.kg,
+          texto: porHa ? nf(p.rendimiento) + " kg/ha" : nf(p.kg) + " kg",
           color: SERIES[i % SERIES.length],
           detalle: [`${nf(p.kg)} kg en ${plural(p.descargas, "descarga", "descargas")}`,
-                    `Grado medio ${nf(p.grado, 2)}%`]
+                    p.rendimiento ? `${nf(p.rendimiento)} kg/ha sobre ${nf(p.superficie, 2)} ha`
+                                  : "Sin superficie asignada",
+                    `Grado medio ${nf(p.grado, 2)}% · glucónico ${nf(p.gluconico, 2)}`]
         });
       });
     });
-    barrasH(lienzo, items, {});
+    document.getElementById("nota-comparativa").textContent = porHa
+      ? "Rendimiento por hectárea de cada parcela, año a año. Es lo que hace comparables "
+        + "parcelas de distinto tamaño."
+        + (sinHa ? ` Quedan fuera ${sinHa} sin superficie asignada.` : "")
+      : "Kilos de cada parcela, año a año. El resto de datos van en el detalle al pasar el ratón.";
+    barrasH(lienzo, items, { vacio: porHa
+      ? "Ninguna parcela tiene superficie asignada todavía: rellénala en la sección Parcelas."
+      : "Sin datos." });
   }
 
   /* --- Agregacion --- */
@@ -1323,8 +1355,22 @@
     }
     if (!parcelas.length) {
       tabla.innerHTML = '<tbody><tr><td class="vacio">Todavía no hay parcelas registradas.</td></tr></tbody>';
+      document.getElementById("pendientes-parcelas").innerHTML = "";
       return;
     }
+
+    // Lo que queda por rellenar, a la vista: es una tarea de varios dias.
+    const sinNombre = parcelas.filter(p => !p.nombre_finca).length;
+    const sinHa = parcelas.filter(p => p.superficie_ha == null).length;
+    const pend = [];
+    if (sinNombre) pend.push(`${sinNombre} sin nombre`);
+    if (sinHa) pend.push(`${sinHa} sin superficie`);
+    document.getElementById("pendientes-parcelas").innerHTML = pend.length
+      ? `<div class="aviso"><span>⚠</span><div>De ${plural(parcelas.length, "parcela", "parcelas")}
+         registradas, ${pend.join(" y ")}. Los campos pendientes van marcados en ámbar.
+         Sin superficie no se calcula el rendimiento en kg/ha.</div></div>`
+      : `<div class="aviso" style="border-left-color:#0ca30c"><span>✓</span><div>Las
+         ${plural(parcelas.length, "parcela", "parcelas")} tienen nombre y superficie.</div></div>`;
     tabla.innerHTML = `
       <thead><tr><th>SIGPAC</th><th style="min-width:200px">Nombre en la finca</th>
         <th class="n" style="min-width:96px">Superficie (ha)</th>
@@ -1337,14 +1383,16 @@
           <td data-etq="Nombre"><input data-poligono="${p.poligono}" data-parcela="${p.parcela}"
                      data-subparcela="${p.subparcela || ""}" data-campo-parcela="nombre_finca"
                      value="${(p.nombre_finca || "").replace(/"/g, "&quot;")}"
-                     placeholder="sin nombre" class="celda-editable">
+                     placeholder="sin nombre"
+                     class="celda-editable${p.nombre_finca ? "" : " falta"}">
               <span class="guardado oculto">guardado</span></td>
           <td class="n" data-etq="Superficie (ha)">
               <input data-poligono="${p.poligono}" data-parcela="${p.parcela}"
                      data-subparcela="${p.subparcela || ""}" data-campo-parcela="superficie_ha"
                      inputmode="decimal" style="text-align:right"
                      value="${p.superficie_ha == null ? "" : String(p.superficie_ha).replace(".", ",")}"
-                     placeholder="—" class="celda-editable">
+                     placeholder="—"
+                     class="celda-editable${p.superficie_ha == null ? " falta" : ""}">
               <span class="guardado oculto">guardado</span></td>
           <td data-etq="Variedad">${p.variedad || "—"}</td>
           <td class="n" data-etq="Kilos">${nf(p.kg)}</td>
@@ -1416,6 +1464,10 @@
     document.getElementById("selector").addEventListener("change", e => {
       diaDescargas = undefined;   // al cambiar de campana, volver a su ultima jornada
       pintar(e.target.value);
+    });
+    document.getElementById("medida-comparativa").addEventListener("change", e => {
+      medidaComparativa = e.target.value;
+      comparativa(document.getElementById("g-campanias"));
     });
     document.getElementById("filtro-dia").addEventListener("change", e => {
       diaDescargas = e.target.value || null;

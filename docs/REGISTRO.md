@@ -168,6 +168,12 @@ dashboard calcula **kg/ha**, que es lo unico que hace comparables dos parcelas
 de distinto tamano y una misma parcela entre campanas. Sin superficie no se
 inventa un rendimiento: se deja en blanco y se avisa en "Datos pendientes".
 
+Como el maestro se completa poco a poco, la seccion Parcelas dice cuantas
+quedan sin nombre o sin superficie y marca en ambar los campos pendientes. La
+comparativa entre campanas se puede ver en kilos o en **kg/ha**; en kg/ha las
+parcelas sin superficie quedan fuera del grafico y se dice cuantas son, en vez
+de dibujarlas con un cero que no es cierto.
+
 ### Filtro por dia
 
 Una campana ronda las sesenta descargas, asi que la tabla no las lista todas de
