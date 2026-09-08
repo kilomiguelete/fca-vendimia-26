@@ -11,8 +11,13 @@ export function supabase() {
 
 const COOKIE = "vendimia_sesion";
 
+function secretoSesion() {
+  return process.env.SECRETO_SESION || process.env.CLAVE_ACCESO || null;
+}
+
 function firmar(valor) {
-  const secreto = process.env.SECRETO_SESION || process.env.CLAVE_ACCESO || "";
+  const secreto = secretoSesion();
+  if (!secreto) throw new Error("Falta SECRETO_SESION o CLAVE_ACCESO");
   return crypto.createHmac("sha256", secreto).update(valor).digest("hex");
 }
 
@@ -24,6 +29,9 @@ export function crearCookie(dias = 30) {
 }
 
 export function sesionValida(req) {
+  // Sin secreto configurado no hay sesion posible: firmar con clave vacia
+  // dejaria pasar cualquier cookie fabricada.
+  if (!secretoSesion()) return false;
   const bruto = req.headers.cookie || "";
   const par = bruto.split(";").map(c => c.trim()).find(c => c.startsWith(COOKIE + "="));
   if (!par) return false;
