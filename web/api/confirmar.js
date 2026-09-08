@@ -1,4 +1,4 @@
-import { conSesion, supabase } from "./_comun.js";
+import { conSesion, bd } from "./_comun.js";
 
 const CAMPOS = [
   "ticket", "fecha", "campania", "poligono", "parcela", "subparcela", "paraje",
@@ -19,11 +19,10 @@ export default conSesion(async (req, res) => {
     res.status(400).json({ error: "Falta el identificador del borrador." });
     return;
   }
-  const db = supabase();
+  const sql = bd();
 
   if (accion === "descartar") {
-    const { error } = await db.from("tickets").update({ estado: "descartado" }).eq("id", id);
-    if (error) throw new Error(error.message);
+    await sql`update tickets set estado = 'descartado' where id = ${id}`;
     res.status(200).json({ ok: true });
     return;
   }
@@ -43,15 +42,26 @@ export default conSesion(async (req, res) => {
     return;
   }
 
-  cambios.estado = "confirmado";
-  cambios.confirmado_en = new Date().toISOString();
-  const { data, error } = await db.from("tickets").update(cambios).eq("id", id).select().single();
-  if (error) {
-    if (error.code === "23505") {
+  // Una sola sentencia parametrizada: los nombres de columna salen de CAMPOS,
+  // nunca del cuerpo de la peticion, y los valores van como parametros.
+  const columnas = CAMPOS.filter(c => c in cambios);
+  const asignaciones = columnas.map((c, i) => `${c} = $${i + 2}`).join(", ");
+  const valores = columnas.map(c => cambios[c]);
+  const consulta = `update tickets set ${asignaciones}${columnas.length ? ", " : ""}`
+    + `estado = 'confirmado', confirmado_en = now() where id = $1 returning id, ticket`;
+
+  try {
+    const filas = await sql.query(consulta, [id, ...valores]);
+    if (!filas.length) {
+      res.status(404).json({ error: "Ese borrador ya no existe." });
+      return;
+    }
+    res.status(200).json({ ticket: filas[0] });
+  } catch (e) {
+    if (e.code === "23505") {
       res.status(409).json({ error: "Ese número de ticket ya está confirmado en esta campaña." });
       return;
     }
-    throw new Error(error.message);
+    throw e;
   }
-  res.status(200).json({ ticket: data });
 });

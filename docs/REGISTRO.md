@@ -76,8 +76,8 @@ cada push. Tiene dos mitades:
 
 - **Dashboard**: kilos y grado por campana, por parcela y por dia, comparativa
   entre campanas y detalle de descargas.
-- **Captura**: boton para subir el JPG del ticket. La foto se guarda en Supabase
-  Storage, se extraen los campos con la API de Claude y queda como **borrador**.
+- **Captura**: boton para subir el JPG del ticket. La foto se guarda en la base de
+  datos, se extraen los campos con la API de Claude y queda como **borrador**.
   Nada entra al registro sin que una persona lo confirme en pantalla, con la
   foto al lado.
 
@@ -91,10 +91,13 @@ es quien decide.
 
 ### Donde vive cada cosa
 
-- **Supabase** es la fuente de verdad de los tickets y del maestro de parcelas.
-- **Los CSV** de `datos/` son la copia versionada: `datos/sincronizar.py` los
-  regenera desde Supabase para que el historial quede en git y el registro se
-  pueda leer y exportar sin depender de ningun servicio.
+- **Postgres** (Neon, creada desde la pestana Storage de Vercel) es la fuente de
+  verdad de los tickets y del maestro de parcelas. Las fotos se guardan en la
+  propia tabla, no en un almacen aparte: asi heredan el mismo control de acceso
+  y no queda ninguna URL publica adivinable.
+- **Los CSV** de `datos/` son la copia versionada. `/api/exportar` descarga el
+  registro confirmado en CSV para archivarlo en el repositorio, de modo que el
+  historial quede en git y los datos se puedan leer sin depender de la base.
 - El sitio publicado **no contiene ningun fichero de datos estatico**: la puerta
   es de navegador, asi que cualquier JSON servido junto al HTML seria
   descargable sin contrasena. Todo dato pasa por `/api/datos`, que exige cookie.
@@ -103,13 +106,13 @@ es quien decide.
 
 | Variable | Para que |
 |---|---|
-| `SUPABASE_URL` | URL del proyecto de Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio; solo la usan las funciones del servidor |
+| `DATABASE_URL` | Cadena de conexion a Postgres; la inyecta la integracion de Vercel |
 | `ANTHROPIC_API_KEY` | Lectura de los tickets |
 | `CLAVE_ACCESO` | Contrasena compartida del sitio |
 | `SECRETO_SESION` | Firma de la cookie de sesion (opcional; si falta se usa `CLAVE_ACCESO`) |
 
-`supabase/esquema.sql` crea las tablas, los indices y el bucket privado.
+`db/esquema.sql` crea las tablas y los indices; `db/datos_iniciales.sql` carga
+lo ya volcado a mano.
 
 ### Agregacion
 

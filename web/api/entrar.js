@@ -5,8 +5,8 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     // Informa si faltan variables de entorno, para que la puerta lo diga en vez
     // de fallar al intentar entrar.
-    const configurado = Boolean(process.env.CLAVE_ACCESO && process.env.SUPABASE_URL
-      && process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.ANTHROPIC_API_KEY);
+    const configurado = Boolean(process.env.CLAVE_ACCESO && process.env.ANTHROPIC_API_KEY
+      && (process.env.DATABASE_URL || process.env.POSTGRES_URL));
     res.status(200).json({ dentro: sesionValida(req), configurado });
     return;
   }

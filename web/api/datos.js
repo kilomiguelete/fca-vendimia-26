@@ -1,45 +1,32 @@
-import { conSesion, supabase } from "./_comun.js";
+import { conSesion, bd } from "./_comun.js";
 
-const ref = t => [t.poligono, t.parcela, t.subparcela].filter(Boolean).join("/");
-
-/** Filas confirmadas, con la parcela y la variedad ya resueltas contra los
- *  maestros. La agregacion la hace el navegador, igual que con datos.js. */
+/** Filas confirmadas, con parcela y variedad ya resueltas contra el maestro.
+ *  La agregacion la hace el navegador: una sola implementacion del calculo. */
 export default conSesion(async (req, res) => {
-  const db = supabase();
-  const [{ data: tickets, error: e1 }, { data: parcelas, error: e2 }] = await Promise.all([
-    db.from("tickets").select("*").eq("estado", "confirmado").order("fecha"),
-    db.from("parcelas").select("*"),
-  ]);
-  if (e1) throw new Error(e1.message);
-  if (e2) throw new Error(e2.message);
-
-  const maestro = Object.fromEntries((parcelas || []).map(p => [ref(p), p]));
-
-  const filas = (tickets || []).map(t => {
-    const clave = ref(t);
-    const m = maestro[clave] || {};
-    return {
-      ticket: t.ticket,
-      fecha: t.fecha,
-      campania: t.campania,
-      ref_sigpac: clave,
-      parcela: m.nombre_finca || null,
-      paraje: t.paraje || m.paraje || null,
-      variedad: m.variedad || t.variedad || "",
-      regimen: m.regimen || null,
-      kg: t.kg_neto,
-      kg_bruto: t.kg_bruto,
-      kg_tara: t.kg_tara,
-      grado: t.grado_alc_probable == null ? null : Number(t.grado_alc_probable),
-      color: t.color == null ? null : Number(t.color),
-      ph: t.ph == null ? null : Number(t.ph),
-      acidez: t.acidez == null ? null : Number(t.acidez),
-      matriculas: [t.matricula_1, t.matricula_2].filter(Boolean).join(" - "),
-      hora: t.hora_vendimia ? String(t.hora_vendimia).slice(0, 5) : null,
-      temperatura: t.temperatura_c == null ? null : Number(t.temperatura_c),
-      observaciones: t.observaciones || null,
-    };
-  });
+  const sql = bd();
+  const filas = await sql`
+    select t.ticket, t.fecha, t.campania,
+           concat_ws('/', t.poligono, t.parcela, t.subparcela) as ref_sigpac,
+           p.nombre_finca            as parcela,
+           coalesce(t.paraje, p.paraje) as paraje,
+           coalesce(p.variedad, t.variedad, '') as variedad,
+           p.regimen,
+           t.kg_neto                 as kg,
+           t.kg_bruto, t.kg_tara,
+           t.grado_alc_probable::float8 as grado,
+           t.color::float8           as color,
+           t.ph::float8              as ph,
+           t.acidez::float8          as acidez,
+           nullif(concat_ws(' - ', t.matricula_1, t.matricula_2), '') as matriculas,
+           to_char(t.hora_vendimia, 'HH24:MI') as hora,
+           t.temperatura_c::float8   as temperatura,
+           t.observaciones
+      from tickets t
+      left join parcelas p
+        on p.poligono = t.poligono and p.parcela = t.parcela
+       and p.subparcela = coalesce(t.subparcela, '')
+     where t.estado = 'confirmado'
+     order by t.campania, t.fecha, t.ticket`;
 
   res.status(200).json({
     finca: "Finca Casa Aparicio S.L.",

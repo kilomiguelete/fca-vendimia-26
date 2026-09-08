@@ -192,7 +192,11 @@
     <div class="desplaza"><table id="t-descargas"></table></div>
   </div>
 
-  <footer id="pie"></footer>
+  <footer>
+    <div id="pie"></div>
+    <p style="margin-top:10px"><a href="/api/exportar">Descargar el registro en CSV</a>
+      — para archivarlo en el repositorio o abrirlo en una hoja de cálculo.</p>
+  </footer>
 </div>
 <div class="pista" id="pista"></div>
 
@@ -697,8 +701,8 @@
     document.getElementById("borradores").innerHTML = borradores.map(b => `
       <div class="borrador" data-id="${b.id}">
         <div class="par">
-          <div>${b.jpg_url
-            ? `<a href="${b.jpg_url}" target="_blank" rel="noopener"><img src="${b.jpg_url}" alt="Ticket ${b.ticket || ""}"></a>`
+          <div>${b.tiene_foto
+            ? `<a href="/api/foto?id=${b.id}" target="_blank" rel="noopener"><img src="/api/foto?id=${b.id}" alt="Ticket ${b.ticket || ""}"></a>`
             : '<p class="vacio">Sin foto</p>'}</div>
           <div>
             ${(b.dudas || []).map(d => `<div class="duda"><span>⚠</span><span>${d}</span></div>`).join("")}
@@ -788,7 +792,7 @@
     if (estado.dentro) { await abrir(); return; }
     if (estado.configurado === false) {
       errorClave.textContent = "El servidor aún no tiene configuradas las variables de "
-        + "entorno (Supabase y la clave de API). Hasta entonces no se puede entrar.";
+        + "entorno (la base de datos y la clave de API). Hasta entonces no se puede entrar.";
       errorClave.classList.remove("oculto");
     }
     document.getElementById("clave").focus();

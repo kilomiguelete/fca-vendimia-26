@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { conSesion, supabase, fechaISO } from "./_comun.js";
+import { conSesion, bd, fechaISO } from "./_comun.js";
 
 const numero = () => z.number().nullable();
 const texto = () => z.string().nullable();
@@ -101,13 +101,6 @@ export default conSesion(async (req, res) => {
   const t = respuesta.parsed_output;
   const fecha = fechaISO(t.fecha);
 
-  const db = supabase();
-  const ruta = `${fecha || "sin-fecha"}/${t.ticket || Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-  const { error: errSubida } = await db.storage
-    .from("tickets")
-    .upload(ruta, bytes, { contentType: mime, upsert: false });
-  if (errSubida) throw new Error("No se pudo guardar la foto: " + errSubida.message);
-
   const dudas = [...t.dudas];
   // La comprobacion que nos habria salvado el primer ticket: en un remolque de
   // vendimia la tara no suele superar a la uva.
@@ -116,33 +109,17 @@ export default conSesion(async (req, res) => {
       + "Comprueba que no estén intercambiados antes de confirmar.");
   }
 
-  const { data, error } = await db.from("tickets").insert({
-    estado: "borrador",
-    jpg_ruta: ruta,
-    ticket: t.ticket,
-    fecha,
-    campania: t.campania,
-    poligono: t.poligono,
-    parcela: t.parcela,
-    subparcela: t.subparcela,
-    paraje: t.paraje,
-    variedad: t.variedad,
-    incidencia: t.incidencia,
-    matricula_1: t.matricula_1,
-    matricula_2: t.matricula_2,
-    kg_bruto: t.kg_bruto,
-    kg_tara: t.kg_tara,
-    kg_neto: t.kg_neto,
-    kg_estimado: t.kg_estimado,
-    grado_alc_probable: t.grado_alc_probable,
-    color: t.color,
-    acidez: t.acidez,
-    ph: t.ph,
-    gluconico: t.gluconico,
-    dudas,
-    extraccion: t,
-  }).select().single();
-  if (error) throw new Error("No se pudo guardar el borrador: " + error.message);
+  const sql = bd();
+  const [fila] = await sql`
+    insert into tickets (estado, jpg, jpg_tipo, ticket, fecha, campania, poligono, parcela,
+      subparcela, paraje, variedad, incidencia, matricula_1, matricula_2, kg_bruto, kg_tara,
+      kg_neto, kg_estimado, grado_alc_probable, color, acidez, ph, gluconico, dudas, extraccion)
+    values ('borrador', decode(${base64}, 'base64'), ${mime}, ${t.ticket}, ${fecha},
+      ${t.campania}, ${t.poligono}, ${t.parcela}, ${t.subparcela}, ${t.paraje}, ${t.variedad},
+      ${t.incidencia}, ${t.matricula_1}, ${t.matricula_2}, ${t.kg_bruto}, ${t.kg_tara},
+      ${t.kg_neto}, ${t.kg_estimado}, ${t.grado_alc_probable}, ${t.color}, ${t.acidez},
+      ${t.ph}, ${t.gluconico}, ${JSON.stringify(dudas)}::jsonb, ${JSON.stringify(t)}::jsonb)
+    returning id, ticket, fecha`;
 
-  res.status(200).json({ borrador: data });
+  res.status(200).json({ borrador: fila });
 });

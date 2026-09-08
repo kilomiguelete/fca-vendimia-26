@@ -1,12 +1,11 @@
 import crypto from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
+import { neon } from "@neondatabase/serverless";
 
-/** Cliente de Supabase con la service_role key: salta RLS, solo vive en el servidor. */
-export function supabase() {
-  const url = process.env.SUPABASE_URL;
-  const clave = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !clave) throw new Error("Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
-  return createClient(url, clave, { auth: { persistSession: false } });
+/** Conexion a Postgres. La integracion de Vercel inyecta una de las dos. */
+export function bd() {
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!url) throw new Error("Falta DATABASE_URL");
+  return neon(url);
 }
 
 const COOKIE = "vendimia_sesion";
