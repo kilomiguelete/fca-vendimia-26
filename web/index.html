@@ -118,6 +118,7 @@
   .boton.principal { background: var(--serie-1); border-color: var(--serie-1); color: #fff; }
   .boton.principal:hover { filter: brightness(1.07); }
   .boton:disabled { opacity: .55; cursor: default; }
+  a.boton { text-decoration: none; display: inline-block; }
   .puerta {
     position: fixed; inset: 0; background: var(--plano); z-index: 20;
     display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -335,9 +336,12 @@
         <h2>Descargas</h2>
         <p class="nota" id="resumen-dia"></p>
       </div>
-      <label class="sub">Día
-        <select id="filtro-dia"></select>
-      </label>
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+        <label class="sub">Día
+          <select id="filtro-dia"></select>
+        </label>
+        <a class="boton" id="b-informe" href="#" target="_blank" rel="noopener">Informe en PDF</a>
+      </div>
     </div>
     <div class="desplaza"><table id="t-descargas" class="compacta fichas"></table></div>
   </div>
@@ -842,6 +846,18 @@
     document.getElementById("resumen-dia").textContent = diaDescargas
       ? `${plural(visibles.length, "descarga", "descargas")} · ${nf(kgVisibles)} kg el ${fechaLarga(diaDescargas)}`
       : `Las ${c.descargas.length} descargas de la campaña · ${nf(kgVisibles)} kg`;
+
+    // El informe siempre es de una jornada concreta: con "Todos" seleccionado
+    // se ofrece el de la ultima.
+    const diaInforme = diaDescargas || dias[dias.length - 1];
+    const bInforme = document.getElementById("b-informe");
+    if (diaInforme) {
+      bInforme.href = `/api/informe?fecha=${diaInforme}`;
+      bInforme.textContent = `Informe del ${fechaLarga(diaInforme)}`;
+      bInforme.classList.remove("oculto");
+    } else {
+      bInforme.classList.add("oculto");
+    }
 
     document.getElementById("t-descargas").innerHTML =
       `<thead><tr><th>Ticket</th><th>Fecha</th><th>Hora</th><th>Parcela</th><th>Variedad</th>

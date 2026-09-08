@@ -152,6 +152,21 @@ golpe: por defecto muestra la **ultima jornada** y el selector "Dia" abre el
 resto o la campana entera. Junto al titulo van las descargas y los kilos de lo
 que se este mostrando.
 
+### Informe en PDF
+
+Junto al selector de dia, "Informe del ..." descarga `/api/informe?fecha=...`:
+un PDF de una pagina con las descargas de esa jornada y el acumulado de la
+campana (kilos, grado medio y color medio, totales y por tipologia, con el
+reparto en un quesito). Las medias van ponderadas por kilos, igual que en el
+dashboard, y la tabla salta de pagina si la jornada es larga.
+
+**El envio automatico por correo esta en espera, a peticion de la finca**: hay
+jornadas en que se descarga muy tarde y una hora fija enviaria el informe antes
+de la ultima entrada. `web/api/_informe.js` (el PDF) y `_datos_informe.js` (la
+consulta) ya estan listos; para activarlo faltaria un endpoint que lo envie y
+decidir el disparador, que probablemente deba ser un boton "cerrar jornada y
+enviar" en vez de un horario.
+
 ### Corregir y quitar tickets
 
 Desde la tabla de descargas, cada ticket registrado tiene **Editar** y **Borrar**.
