@@ -121,6 +121,15 @@ comprobacion, es ruido que se acaba ignorando.
 `db/esquema.sql` crea las tablas y los indices; `db/datos_iniciales.sql` carga
 lo ya volcado a mano.
 
+### Coste de la lectura
+
+Cada ticket cuesta del orden de tres centimos con `effort: "low"` (unos siete
+con el esfuerzo alto por defecto). El razonamiento es la partida mayor, asi que
+el esfuerzo es la palanca principal. Se usa el bajo porque la tarea es
+transcribir, no razonar, y porque toda lectura pasa despues por la pantalla de
+confirmacion. Si aparecen lecturas erroneas, subirlo a `"medium"` antes que
+cambiar de modelo.
+
 ### Agregacion
 
 Las medias de grado y color van **ponderadas por kilos**, no en media simple:

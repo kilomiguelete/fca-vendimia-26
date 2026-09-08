@@ -91,7 +91,10 @@ export default conSesion(async (req, res) => {
         { type: "text", text: "Transcribe este ticket de báscula." },
       ],
     }],
-    output_config: { format: zodOutputFormat(EsquemaTicket, "ticket") },
+    // Esfuerzo bajo: esto es transcribir un papel, no razonar. La red de
+    // seguridad es la pantalla de confirmacion, no el gasto en razonamiento.
+    // Si aparecen lecturas erroneas, subir a "medium".
+    output_config: { effort: "low", format: zodOutputFormat(EsquemaTicket, "ticket") },
   });
 
   if (respuesta.stop_reason === "refusal") {
