@@ -102,11 +102,13 @@ export default conSesion(async (req, res) => {
   const fecha = fechaISO(t.fecha);
 
   const dudas = [...t.dudas];
-  // La comprobacion que nos habria salvado el primer ticket: en un remolque de
-  // vendimia la tara no suele superar a la uva.
-  if (t.kg_tara != null && t.kg_neto != null && t.kg_tara > t.kg_neto) {
-    dudas.push(`El ticket etiqueta ${t.kg_tara} kg como tara y ${t.kg_neto} kg como neto. `
-      + "Comprueba que no estén intercambiados antes de confirmar.");
+  // La tara del conjunto (tractor mas remolque) supera con normalidad a la
+  // carga, asi que no se avisa por eso. Lo que si delata un error es que la
+  // resta no cuadre.
+  const { kg_bruto: kb, kg_tara: kt, kg_neto: kn } = t;
+  if ([kb, kt, kn].every(v => v != null) && kb - kt !== kn) {
+    dudas.push(`La pesada no cuadra: ${kb} − ${kt} = ${kb - kt}, pero el ticket `
+      + `imprime ${kn} de neto.`);
   }
 
   const sql = bd();

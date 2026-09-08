@@ -61,12 +61,12 @@ depende del maestro de parcelas. No se rellenan por estimacion.
 - **Valores impresos como `0`** en acidez y pH significan "no analizado", no
   cero real: se dejan vacios y se anota en `observaciones`.
 - Campo ilegible o ausente → vacio, y se anota en `observaciones`.
-- **Tara y neto**: la bascula de la cooperativa ha impreso al menos un ticket con
-  los dos valores intercambiados (etiqueta como "Tara" lo que en realidad es la
-  uva). En el CSV mandan la tara real del conjunto y el neto que se deduce de
-  ella; lo que imprime el ticket queda anotado en `observaciones`. Como la tara
-  de un mismo conjunto es practicamente constante, `datos/validar.py` avisa si
-  varia mas de 500 kg entre tickets: eso delata el intercambio.
+- **Tara y neto**: se transcriben con la etiqueta que les pone el ticket. La
+  tara es la del conjunto completo (tractor mas remolque), por lo que supera con
+  normalidad a los kilos de uva; eso no es un error. Lo que si lo es que
+  `bruto - tara` no de el neto impreso, y eso se comprueba siempre. Como ademas
+  la tara de un mismo conjunto es practicamente constante, `datos/validar.py`
+  avisa si varia mas de 500 kg entre tickets.
 - Fechas en ISO (`AAAA-MM-DD`); el ticket las imprime como `DD/MM/AA`.
 
 ## Dashboard y captura de tickets
@@ -83,11 +83,18 @@ cada push. Tiene dos mitades:
 
 ### Por que la confirmacion no es opcional
 
-El primer ticket volcado traia la tara y el neto intercambiados respecto a lo
-que la finca sabe que pesa el remolque. Una extraccion automatica sin revision
-habria dado esa parcela por 2.380 kg en lugar de 11.500. La extraccion avisa
-cuando la tara supera al neto y cuando la pesada no cuadra, pero quien confirma
-es quien decide.
+Un ticket de bascula no se lee solo con los ojos: hay que saber que pesa el
+conjunto, que parcela se estaba vendimiando y que significa cada campo impreso.
+Con el primer ticket hizo falta una ida y vuelta sobre cual de las dos cifras
+era la tara, y quien lo resolvio fue quien conoce la finca, no la lectura
+automatica. Por eso nada entra al registro sin pasar por la pantalla de
+revision, con la foto al lado.
+
+Las comprobaciones automaticas se limitan a lo que es verificable sin conocer la
+explotacion: que `bruto - tara` de el neto impreso, que el numero de ticket no
+este ya confirmado en la campana, y que los campos que la lectura no dio por
+seguros salgan marcados. Un aviso que salta en todos los tickets no es una
+comprobacion, es ruido que se acaba ignorando.
 
 ### Donde vive cada cosa
 

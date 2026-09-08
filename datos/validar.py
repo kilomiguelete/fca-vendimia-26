@@ -23,14 +23,14 @@ def main(path="datos/albaranes.csv"):
             errores.append(f"ticket {tk}: neto no positivo ({n})")
         taras[f["matricula_1"], f["matricula_2"]].add(t)
 
-    # La tara de un mismo conjunto es casi constante: si baila, es que en algun
-    # ticket la bascula ha intercambiado tara y neto.
+    # La tara de un mismo conjunto es casi constante: si baila, o se ha leido
+    # mal una cifra o el viaje se hizo con otro remolque.
     for conjunto, valores in taras.items():
         if len(valores) > 1 and max(valores) - min(valores) > 500:
             errores.append(
                 f"conjunto {' - '.join(c for c in conjunto if c)}: la tara varia entre "
-                f"{min(valores)} y {max(valores)} kg. Revisar si algun ticket lleva "
-                f"tara y neto intercambiados.")
+                f"{min(valores)} y {max(valores)} kg. Revisar la lectura o si "
+                f"se uso otro remolque.")
     print(f"{len(filas)} tickets revisados")
     for e in errores:
         print("  !", e)
