@@ -121,6 +121,20 @@ comprobacion, es ruido que se acaba ignorando.
 `db/esquema.sql` crea las tablas y los indices; `db/datos_iniciales.sql` carga
 lo ya volcado a mano.
 
+### Secciones
+
+El menu de hamburguesa (arriba a la izquierda) tiene dos secciones:
+
+- **Panel**: el dashboard y la bandeja de revision.
+- **Parcelas**: todas las parcelas que han aparecido en algun ticket, con su
+  referencia SIGPAC y un campo para ponerles el nombre con el que se las llama
+  en la finca. El nombre se guarda al salir del campo y pasa a usarse en todo
+  el dashboard. La lista incluye las parcelas que estan en tickets pero aun no
+  en el maestro: son justo las que hace falta bautizar.
+
+En la tabla de descargas, el numero de ticket es un enlace que abre la foto
+original de la que se saco la informacion.
+
 ### Corregir y quitar tickets
 
 Desde la tabla de descargas, cada ticket registrado tiene **Editar** y **Borrar**.

@@ -134,15 +134,59 @@
   }
   .borrar:hover { border-color: #d03b3b; color: #d03b3b; }
   .borrar:disabled { opacity: .5; cursor: default; }
+  .hamburguesa {
+    font: inherit; font-size: 19px; line-height: 1; cursor: pointer;
+    width: 40px; height: 40px; border-radius: 10px; flex: none;
+    border: 1px solid var(--borde); background: var(--surface-1); color: var(--ink);
+  }
+  .hamburguesa:hover { border-color: var(--ink-mute); }
+  .velo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.32); z-index: 14;
+    opacity: 0; pointer-events: none; transition: opacity .18s;
+  }
+  .velo.visible { opacity: 1; pointer-events: auto; }
+  .cajon {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 250px; z-index: 15;
+    background: var(--surface-1); border-right: 1px solid var(--borde);
+    padding: 20px 16px; transform: translateX(-100%); transition: transform .18s;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .cajon.abierto { transform: none; }
+  .cajon h3 { margin: 4px 6px 12px; font-size: 12px; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--ink-mute); }
+  .cajon button {
+    font: inherit; text-align: left; padding: 10px 12px; border-radius: 9px;
+    border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer;
+  }
+  .cajon button:hover { background: var(--plano); }
+  .cajon button[aria-current="true"] { background: var(--plano); border-color: var(--borde); font-weight: 600; }
+  .guardado { font-size: 12px; color: #006300; margin-left: 8px; }
+  @media (prefers-color-scheme: dark) { .guardado { color: #0ca30c; } }
+  .sin-nombre { color: var(--ink-mute); font-style: italic; }
+  .enlace-ticket {
+    font: inherit; padding: 0; border: none; background: none; cursor: pointer;
+    color: var(--serie-1); text-decoration: underline; text-underline-offset: 2px;
+  }
+  .visor {
+    position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.78);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .visor img { max-width: 100%; max-height: 82vh; border-radius: 10px; background: #fff; }
+  .visor figure { margin: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .visor figcaption { color: #fff; font-size: 13px; display: flex; gap: 14px; align-items: center; }
+  .visor a { color: #fff; }
   a { color: inherit; }
 </style>
 </head>
 <body>
 <div class="envoltura">
   <header>
-    <div>
-      <h1>Vendimia · <span id="finca"></span></h1>
-      <div class="sub" id="subtitulo"></div>
+    <div style="display:flex; gap:14px; align-items:center">
+      <button class="hamburguesa" id="b-menu" aria-label="Menú" aria-expanded="false">☰</button>
+      <div>
+        <h1>Vendimia · <span id="finca"></span></h1>
+        <div class="sub" id="subtitulo"></div>
+      </div>
     </div>
     <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
       <label class="sub">Campaña
@@ -153,6 +197,14 @@
     </div>
   </header>
 
+  <div class="velo" id="velo"></div>
+  <nav class="cajon" id="cajon" aria-label="Secciones">
+    <h3>Vendimia</h3>
+    <button data-vista="panel" aria-current="true">Panel</button>
+    <button data-vista="parcelas">Parcelas</button>
+  </nav>
+
+  <div id="vista-panel">
   <div id="estado-subida"></div>
 
   <div class="panel revision oculto" id="panel-revision">
@@ -199,6 +251,18 @@
     <div class="desplaza"><table id="t-descargas"></table></div>
   </div>
 
+  </div><!-- fin vista-panel -->
+
+  <div id="vista-parcelas" class="oculto">
+    <div class="panel" style="margin-top:0">
+      <h2>Parcelas</h2>
+      <p class="nota">Cada parcela que ha aparecido en algún ticket, con su
+        referencia SIGPAC. Ponle el nombre con el que la llamáis en la finca y
+        pasará a usarse en todo el dashboard. Se guarda al salir del campo.</p>
+      <div class="desplaza"><table id="t-parcelas-edit"></table></div>
+    </div>
+  </div>
+
   <footer>
     <div id="pie"></div>
     <p style="margin-top:10px"><a href="/api/exportar">Descargar el registro en CSV</a>
@@ -206,6 +270,7 @@
   </footer>
 </div>
 <div class="pista" id="pista"></div>
+<div class="visor oculto" id="visor"></div>
 
 <div class="puerta" id="puerta">
   <div class="caja">
@@ -581,7 +646,9 @@
         <th class="n">Grado</th><th class="n">Color</th><th class="n">Tª</th><th>Matrículas</th>
         <th></th></tr></thead>
        <tbody>${c.descargas.map(d => `<tr>
-          <td>${d.ticket}</td><td>${fechaLarga(d.fecha)}</td>
+          <td>${d.tiene_foto
+            ? `<button class="enlace-ticket" data-foto="${d.id}" data-ticket="${d.ticket}">${d.ticket}</button>`
+            : d.ticket}</td><td>${fechaLarga(d.fecha)}</td>
           <td>${d.hora || "<span style='color:var(--ink-mute)'>—</span>"}</td>
           <td>${d.parcela || d.ref_sigpac}</td><td>${d.variedad}</td>
           <td class="n">${nf(d.kg_bruto)}</td><td class="n">${nf(d.kg_tara)}</td>
@@ -594,6 +661,10 @@
             <button class="borrar" data-borrar="${d.id}" data-ticket="${d.ticket}">Borrar</button>
           </td>
         </tr>`).join("")}</tbody>`;
+
+    document.querySelectorAll("[data-foto]").forEach(boton => {
+      boton.addEventListener("click", () => verFoto(boton.dataset.foto, boton.dataset.ticket));
+    });
 
     document.querySelectorAll("[data-editar]").forEach(boton => {
       boton.addEventListener("click", async () => {
@@ -744,7 +815,15 @@
         const { tickets } = await pedir(`/api/tickets?id=${id}`);
         if (tickets[0]) borradores.push(tickets[0]);
       }
-    } catch { panel.classList.add("oculto"); return; }
+    } catch (e) {
+      // Un fallo aqui no puede esconder el panel en silencio: si pasa, el
+      // usuario ve que clica y no ocurre nada, sin saber por que.
+      panel.classList.remove("oculto");
+      document.getElementById("n-borradores").textContent = "!";
+      document.getElementById("borradores").innerHTML =
+        `<div class="duda"><span>⚠</span><span>No se pudo cargar la bandeja: ${e.message}</span></div>`;
+      return;
+    }
     document.getElementById("n-borradores").textContent = borradores.length;
     panel.classList.toggle("oculto", !borradores.length);
 
@@ -813,6 +892,118 @@
           }
         });
       });
+    });
+  }
+
+  /* --- Visor de la foto del ticket --- */
+  const visor = document.getElementById("visor");
+  function cerrarVisor() { visor.classList.add("oculto"); visor.innerHTML = ""; }
+  function verFoto(id, ticket) {
+    visor.innerHTML = `<figure>
+      <img src="/api/foto?id=${id}" alt="Ticket ${ticket}">
+      <figcaption><span>Ticket ${ticket}</span>
+        <a href="/api/foto?id=${id}" target="_blank" rel="noopener">Abrir en una pestaña</a>
+        <span>· pulsa fuera o Esc para cerrar</span></figcaption>
+    </figure>`;
+    visor.classList.remove("oculto");
+    visor.onclick = e => { if (e.target === visor || e.target.tagName === "FIGCAPTION") cerrarVisor(); };
+  }
+
+  /* --- Menu y secciones --- */
+  const cajon = document.getElementById("cajon");
+  const velo = document.getElementById("velo");
+  const bMenu = document.getElementById("b-menu");
+
+  function menu(abierto) {
+    cajon.classList.toggle("abierto", abierto);
+    velo.classList.toggle("visible", abierto);
+    bMenu.setAttribute("aria-expanded", String(abierto));
+  }
+  bMenu.addEventListener("click", () => menu(!cajon.classList.contains("abierto")));
+  velo.addEventListener("click", () => menu(false));
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    menu(false);
+    cerrarVisor();
+  });
+
+  async function irA(vista) {
+    document.getElementById("vista-panel").classList.toggle("oculto", vista !== "panel");
+    document.getElementById("vista-parcelas").classList.toggle("oculto", vista !== "parcelas");
+    cajon.querySelectorAll("[data-vista]").forEach(b =>
+      b.setAttribute("aria-current", String(b.dataset.vista === vista)));
+    menu(false);
+    if (vista === "parcelas") await cargarParcelas();
+  }
+  cajon.querySelectorAll("[data-vista]").forEach(b =>
+    b.addEventListener("click", () => irA(b.dataset.vista)));
+
+  /* --- Parcelas --- */
+  async function cargarParcelas() {
+    const tabla = document.getElementById("t-parcelas-edit");
+    let parcelas;
+    try {
+      parcelas = (await pedir("/api/parcelas")).parcelas;
+    } catch (e) {
+      tabla.innerHTML = `<tbody><tr><td class="vacio">${e.message}</td></tr></tbody>`;
+      return;
+    }
+    if (!parcelas.length) {
+      tabla.innerHTML = '<tbody><tr><td class="vacio">Todavía no hay parcelas registradas.</td></tr></tbody>';
+      return;
+    }
+    tabla.innerHTML = `
+      <thead><tr><th>SIGPAC</th><th style="min-width:220px">Nombre en la finca</th>
+        <th>Variedad</th><th class="n">Kilos</th><th class="n">Descargas</th>
+        <th class="n">Campañas</th><th>Última entrada</th></tr></thead>
+      <tbody>${parcelas.map(p => {
+        const ref = [p.poligono, p.parcela, p.subparcela].filter(Boolean).join("/");
+        return `<tr>
+          <td>${ref}</td>
+          <td><input data-poligono="${p.poligono}" data-parcela="${p.parcela}"
+                     data-subparcela="${p.subparcela || ""}"
+                     value="${(p.nombre_finca || "").replace(/"/g, "&quot;")}"
+                     placeholder="sin nombre" style="font:inherit; width:100%; padding:7px 9px;
+                     border-radius:7px; border:1px solid var(--borde);
+                     background:var(--plano); color:var(--ink)">
+              <span class="guardado oculto">guardado</span></td>
+          <td>${p.variedad || "—"}</td>
+          <td class="n">${nf(p.kg)}</td>
+          <td class="n">${p.descargas}</td>
+          <td class="n">${p.campanias}</td>
+          <td>${p.ultima ? fechaLarga(p.ultima) : "—"}</td>
+        </tr>`;
+      }).join("")}</tbody>`;
+
+    tabla.querySelectorAll("input[data-poligono]").forEach(campo => {
+      const inicial = campo.value;
+      const aviso = campo.parentElement.querySelector(".guardado");
+      campo.addEventListener("blur", async () => {
+        if (campo.value === inicial) return;
+        campo.disabled = true;
+        try {
+          await pedir("/api/parcelas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              poligono: campo.dataset.poligono,
+              parcela: campo.dataset.parcela,
+              subparcela: campo.dataset.subparcela,
+              nombre_finca: campo.value,
+            }),
+          });
+          aviso.classList.remove("oculto");
+          setTimeout(() => aviso.classList.add("oculto"), 1800);
+          await cargarDatos();          // el nombre nuevo ya manda en el dashboard
+          await cargarParcelas();
+        } catch (e) {
+          alert("No se pudo guardar: " + e.message);
+          campo.value = inicial;
+        } finally {
+          campo.disabled = false;
+        }
+      });
+      campo.addEventListener("keydown", e => { if (e.key === "Enter") campo.blur(); });
     });
   }
 
