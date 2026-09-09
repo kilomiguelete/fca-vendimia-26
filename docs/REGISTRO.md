@@ -90,7 +90,10 @@ cada push. Tiene dos mitades:
 
 - **Dashboard**: kilos y grado por campana, por parcela y por dia, comparativa
   entre campanas y detalle de descargas.
-- **Captura**: boton para subir el JPG del ticket. La foto se guarda en la base de
+- **Captura**: boton para subir el JPG del ticket, desde el carrete o haciendo
+  la foto en el momento; el movil ofrece ambas. El campo de archivo **no** lleva
+  `capture`: con ese atributo el telefono abre la camara directamente y no deja
+  elegir del carrete. La foto se guarda en la base de
   datos, se extraen los campos con la API de Claude y queda como **borrador**.
   Nada entra al registro sin que una persona lo confirme en pantalla, con la
   foto al lado.

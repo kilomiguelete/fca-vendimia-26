@@ -302,7 +302,7 @@
         <select id="selector"></select>
       </label>
       <button class="boton principal" id="b-subir">Subir ticket</button>
-      <input type="file" id="fichero" accept="image/*" capture="environment" multiple class="oculto">
+      <input type="file" id="fichero" accept="image/*,.heic,.heif" multiple class="oculto">
     </div>
   </header>
 
@@ -1062,7 +1062,9 @@
         URL.revokeObjectURL(img.src);
         ok(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
       };
-      img.onerror = () => mal(new Error("No se pudo leer la imagen."));
+      img.onerror = () => mal(new Error(
+        "El navegador no pudo abrir esta imagen. Si viene del carrete en un formato "
+        + "que no reconoce, haz una captura de pantalla o vuelve a hacer la foto."));
       img.src = URL.createObjectURL(fichero);
     });
   }
