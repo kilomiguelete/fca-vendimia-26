@@ -49,15 +49,15 @@
     font: inherit; padding: 7px 11px; border-radius: 8px;
     border: 1px solid var(--borde); background: var(--surface-1); color: var(--ink);
   }
-  .tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .tarjetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
   .tarjeta, .panel {
     background: var(--surface-1); border: 1px solid var(--borde); border-radius: 12px;
   }
-  .tarjeta { padding: 16px 18px; }
-  .tarjeta .etiqueta { color: var(--ink-2); font-size: 12px; margin-bottom: 6px; }
-  .tarjeta .valor { font-size: 27px; font-weight: 600; letter-spacing: -0.02em; }
-  .tarjeta .unidad { font-size: 14px; font-weight: 400; color: var(--ink-2); margin-left: 3px; }
-  .tarjeta .pie { color: var(--ink-mute); font-size: 12px; margin-top: 5px; }
+  .tarjeta { padding: 13px 15px; }
+  .tarjeta .etiqueta { color: var(--ink-2); font-size: 11.5px; margin-bottom: 4px; }
+  .tarjeta .valor { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .tarjeta .unidad { font-size: 12.5px; font-weight: 400; color: var(--ink-2); margin-left: 3px; }
+  .tarjeta .pie { color: var(--ink-mute); font-size: 11.5px; margin-top: 4px; }
   .panel { padding: 20px 22px; margin-top: 20px; }
   .panel h2 { font-size: 15px; margin: 0 0 3px; }
   .panel .nota { color: var(--ink-2); font-size: 12.5px; margin: 0 0 18px; }
@@ -69,6 +69,32 @@
   .rejilla-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
     gap: 20px; margin-top: 20px; }
   .rejilla-2 .panel { margin-top: 0; }
+  .reparto { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: center; }
+  @media (max-width: 760px) { .reparto { grid-template-columns: 1fr; gap: 4px; } }
+  .fila-leyenda {
+    display: flex; gap: 10px; align-items: baseline; padding: 7px 0;
+    border-top: 1px solid var(--grid); font-size: 13px;
+  }
+  .fila-leyenda:first-child { border-top: none; }
+  .fila-leyenda .nombre { flex: 1; min-width: 0; }
+  .fila-leyenda .cifra { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .fila-leyenda .pct { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 52px;
+    text-align: right; }
+  .dias-tiempo { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  @media (max-width: 900px) { .dias-tiempo { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 520px) { .dias-tiempo { grid-template-columns: repeat(2, 1fr); } }
+  .dia-tiempo {
+    border: 1px solid var(--borde); border-radius: 10px; padding: 10px 8px; text-align: center;
+  }
+  .dia-tiempo.llueve { border-color: var(--serie-1);
+    background: color-mix(in srgb, var(--serie-1) 7%, transparent); }
+  .dia-tiempo .cuando { font-size: 11.5px; color: var(--ink-2); text-transform: capitalize; }
+  .dia-tiempo .icono { font-size: 21px; line-height: 1.5; }
+  .dia-tiempo .temps { font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  .dia-tiempo .temps .min { color: var(--ink-2); }
+  .dia-tiempo .agua { font-size: 11.5px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .dia-tiempo .agua.hay { color: var(--serie-1); font-weight: 600; }
+  .dia-tiempo .agua.no { color: var(--ink-mute); }
   .aviso {
     display: flex; gap: 10px; align-items: flex-start;
     background: var(--surface-1); border: 1px solid var(--borde);
@@ -209,6 +235,9 @@
   }
   .cajon button:hover { background: var(--plano); }
   .cajon button[aria-current="true"] { background: var(--plano); border-color: var(--borde); font-weight: 600; }
+  .cajon .boton.principal { background: var(--serie-1); border-color: var(--serie-1); color: #fff; }
+  .cajon .boton.principal:hover { filter: brightness(1.07); background: var(--serie-1); }
+  .separador { height: 1px; background: var(--borde); margin: 12px 6px; }
   .guardado { font-size: 12px; color: #006300; margin-left: 8px; }
   @media (prefers-color-scheme: dark) { .guardado { color: #0ca30c; } }
   .sin-nombre { color: var(--ink-mute); font-style: italic; }
@@ -301,7 +330,6 @@
       <label class="sub">Campaña
         <select id="selector"></select>
       </label>
-      <button class="boton principal" id="b-subir">Subir ticket</button>
       <input type="file" id="fichero" accept="image/*,.heic,.heif" multiple class="oculto">
     </div>
   </header>
@@ -309,6 +337,8 @@
   <div class="velo" id="velo"></div>
   <nav class="cajon" id="cajon" aria-label="Secciones">
     <h3>Vendimia</h3>
+    <button class="boton principal" id="b-subir" style="text-align:center">Subir ticket</button>
+    <div class="separador"></div>
     <button data-vista="panel" aria-current="true">Panel</button>
     <button data-vista="parcelas">Parcelas</button>
   </nav>
@@ -329,19 +359,30 @@
   <div id="aviso-cobertura"></div>
 
   <div class="panel">
+    <h2>Kilos por tipología</h2>
+    <p class="nota">Variedad tal como la imprime el ticket de báscula. El código de
+      la cooperativa incluye el tipo y la mención ecológica, que determinan
+      clasificación y precio.</p>
+    <div class="reparto">
+      <div id="q-variedades"></div>
+      <div id="leyenda-variedades"></div>
+    </div>
+    <div class="desplaza"><table id="t-variedades" class="fichas"></table></div>
+  </div>
+
+  <div class="panel" id="panel-tiempo">
+    <h2>Previsión en Higueruela</h2>
+    <p class="nota">Lluvia y temperatura de los próximos siete días, para decidir
+      cuándo entrar a vendimiar.</p>
+    <div id="tiempo"></div>
+  </div>
+
+
+  <div class="panel">
     <h2>Kilos por parcela</h2>
     <p class="nota">Peso neto entregado en la campaña, por referencia SIGPAC.</p>
     <div id="g-parcelas"></div>
     <div class="desplaza"><table id="t-parcelas" class="fichas"></table></div>
-  </div>
-
-  <div class="panel">
-    <h2>Kilos por variedad</h2>
-    <p class="nota">Variedad tal como la imprime el ticket de báscula. El código de
-      la cooperativa incluye el tipo y la mención ecológica, que determinan
-      clasificación y precio.</p>
-    <div id="g-variedades"></div>
-    <div class="desplaza"><table id="t-variedades" class="fichas"></table></div>
   </div>
 
   <div class="rejilla-2">
@@ -583,6 +624,58 @@
     });
   }
 
+  /* --- Quesito: reparto de un total entre categorias --- */
+  function quesito(destino, items, leyenda) {
+    const total = items.reduce((s, i) => s + i.valor, 0);
+    if (!total) { destino.innerHTML = ""; if (leyenda) leyenda.innerHTML = ""; return; }
+
+    const lado = Math.min(anchoDe(destino, 216), 240);
+    const r = lado / 2 - 4, cx = lado / 2, cy = lado / 2;
+    const s = svg(destino, lado, lado);
+
+    let a0 = -Math.PI / 2;
+    items.forEach((item, i) => {
+      const barrido = (item.valor / total) * Math.PI * 2;
+      const a1 = a0 + barrido;
+      const color = `var(${SERIES[i % SERIES.length]})`;
+      if (items.length === 1) {
+        el("circle", { cx, cy, r, fill: color }, s);
+      } else {
+        const grande = barrido > Math.PI ? 1 : 0;
+        el("path", {
+          d: `M ${cx} ${cy} L ${cx + r * Math.cos(a0)} ${cy + r * Math.sin(a0)} `
+           + `A ${r} ${r} 0 ${grande} 1 ${cx + r * Math.cos(a1)} ${cy + r * Math.sin(a1)} Z`,
+          fill: color, stroke: "var(--surface-1)", "stroke-width": 2 }, s);
+      }
+      // Etiqueta directa dentro de la porcion: el color nunca es el unico canal.
+      const pct = item.valor / total * 100;
+      if (pct >= 7) {
+        const med = a0 + barrido / 2;
+        const tx = el("text", {
+          x: cx + Math.cos(med) * r * 0.62, y: cy + Math.sin(med) * r * 0.62 + 4,
+          "text-anchor": "middle", fill: "#ffffff", "font-size": 12.5,
+          style: "font-variant-numeric: tabular-nums; font-weight: 600" }, s);
+        tx.textContent = nf(pct, 1) + "%";
+      }
+      const zona = el("path", {
+        d: `M ${cx} ${cy} L ${cx + r * Math.cos(a0)} ${cy + r * Math.sin(a0)} `
+         + `A ${r} ${r} 0 ${barrido > Math.PI ? 1 : 0} 1 ${cx + r * Math.cos(a1)} ${cy + r * Math.sin(a1)} Z`,
+        fill: "transparent" }, s);
+      conPista(zona, item.etiqueta, item.detalle);
+      a0 = a1;
+    });
+
+    if (leyenda) {
+      leyenda.innerHTML = items.map((item, i) => `
+        <div class="fila-leyenda">
+          <i class="llave" style="background: var(${SERIES[i % SERIES.length]})"></i>
+          <span class="nombre">${item.etiqueta}</span>
+          <span class="cifra">${item.texto}</span>
+          <span class="pct">${nf(item.valor / total * 100, 1)}%</span>
+        </div>`).join("");
+    }
+  }
+
   /* --- Columnas por fecha: magnitud a lo largo de la campana --- */
   function columnas(destino, items, opciones) {
     if (!items.length) return vacio(destino, opciones.vacio || "Sin datos.");
@@ -763,6 +856,7 @@
         primera: fechas[0] || null,
         ultima: fechas[fechas.length - 1] || null,
         parcelas: new Set(grupo.map(f => f.ref_sigpac)).size,
+        dias: new Set(grupo.map(f => f.fecha).filter(Boolean)).size,
         con_hora: grupo.filter(f => f.hora).length,
       };
     };
@@ -805,11 +899,12 @@
     const r = c.resumen;
 
     document.getElementById("tarjetas").innerHTML = [
-      ["Kilos vendimiados", nf(r.kg), "kg", plural(r.descargas, "descarga", "descargas")],
+      ["Kilos vendimiados", nf(r.kg), "kg", `${nf(r.kg / (r.dias || 1))} kg al día`],
       ["Grado alcohólico probable", nf(r.grado, 2), "%", "media ponderada por kilos"],
       ["Intensidad de color", nf(r.color, 2), "", "media ponderada por kilos"],
       ["Ácido glucónico", nf(r.gluconico, 2), "g/l", "indicador de podredumbre"],
-      ["Parcelas vendimiadas", nf(r.parcelas), "",
+      ["Parcelas vendimiadas", nf(r.parcelas), "", plural(r.descargas, "descarga", "descargas")],
+      ["Días de vendimia", nf(r.dias), "",
         r.primera === r.ultima ? fechaLarga(r.primera) : `${fechaLarga(r.primera)} – ${fechaLarga(r.ultima)}`]
     ].map(([etiqueta, valor, unidad, pie]) => `
       <div class="tarjeta">
@@ -864,7 +959,7 @@
         </tr>`).join("")}</tbody>`;
 
     const totalKg = c.resumen.kg || 1;
-    barrasH(document.getElementById("g-variedades"), c.variedades.map(v => ({
+    quesito(document.getElementById("q-variedades"), c.variedades.map(v => ({
       etiqueta: v.variedad,
       valor: v.kg, texto: nf(v.kg) + " kg",
       detalle: [
@@ -873,7 +968,7 @@
         `Grado ${nf(v.grado, 2)}% · color ${nf(v.color, 2)} · glucónico ${nf(v.gluconico, 2)}`,
         plural(v.parcelas, "parcela", "parcelas"),
       ]
-    })), { vacio: "Todavía no hay variedades registradas." });
+    })), document.getElementById("leyenda-variedades"));
 
     document.getElementById("t-variedades").innerHTML =
       `<thead><tr><th>Variedad</th><th class="n">Kilos</th><th class="n">% campaña</th>
@@ -998,6 +1093,34 @@
         }
       });
     });
+  }
+
+  /* --- Previsión --- */
+  const diaSemana = f => new Date(f + "T12:00:00")
+    .toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
+
+  async function cargarTiempo() {
+    const destino = document.getElementById("tiempo");
+    let datos;
+    try {
+      datos = await pedir("/api/tiempo");
+    } catch (e) {
+      // Que falle la previsión no puede tumbar el panel: es información de apoyo.
+      destino.innerHTML = `<p class="vacio">No se pudo consultar la previsión: ${e.message}</p>`;
+      return;
+    }
+    destino.innerHTML = `<div class="dias-tiempo">${datos.dias.map((d, i) => {
+      const llueve = (d.lluvia || 0) >= 0.2 || (d.probabilidad || 0) >= 40;
+      return `<div class="dia-tiempo ${llueve ? "llueve" : ""}">
+        <div class="cuando">${i === 0 ? "mañana" : diaSemana(d.fecha)} ${d.fecha.slice(8)}</div>
+        <div class="icono" title="${d.texto}">${d.icono}</div>
+        <div class="temps">${d.tmax == null ? "—" : nf(d.tmax, 0)}°<span class="min"> / ${
+          d.tmin == null ? "—" : nf(d.tmin, 0)}°</span></div>
+        <div class="agua ${llueve ? "hay" : "no"}">${
+          llueve ? `${nf(d.lluvia || 0, 1)} mm · ${nf(d.probabilidad || 0, 0)}%`
+                 : "sin lluvia"}</div>
+      </div>`;
+    }).join("")}</div>`;
   }
 
   /* --- Servidor --- */
@@ -1477,6 +1600,7 @@
     });
     await cargarDatos();
     await cargarBorradores();
+    cargarTiempo();   // sin await: la previsión no debe retrasar el panel
   }
 
   (async () => {

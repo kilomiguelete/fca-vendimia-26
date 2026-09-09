@@ -138,6 +138,19 @@ comprobacion, es ruido que se acaba ignorando.
 `db/esquema.sql` crea las tablas y los indices; `db/datos_iniciales.sql` carga
 lo ya volcado a mano.
 
+### Orden del panel
+
+Resumen en seis tarjetas (kilos, grado, color, gluconico, parcelas y dias de
+vendimia), y justo debajo **Kilos por tipologia** con el quesito del reparto,
+que es la lectura que primero se busca. Despues la **prevision de Higueruela**
+(`/api/tiempo`, datos de Open-Meteo), y luego el detalle: parcelas, dia a dia,
+comparativa entre campanas y descargas.
+
+El boton de subir ticket vive en el menu de hamburguesa, no en la cabecera.
+
+La prevision es informacion de apoyo: si su servicio falla, el panel lo dice en
+ese hueco y sigue funcionando; no se espera por ella para pintar el resto.
+
 ### Secciones
 
 El menu de hamburguesa (arriba a la izquierda) tiene dos secciones:
