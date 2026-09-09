@@ -96,13 +96,21 @@
   .fila-leyenda .flecha { color: var(--ink-mute); font-size: 10px; width: 12px; flex: none;
     transition: transform .15s; }
   .fila-leyenda[aria-expanded="true"] .flecha { transform: rotate(90deg); }
-  .detalle-tipologia {
+  .detalle-tipologia { padding: 4px 0 14px 22px; }
+  .detalle-tipologia .pares {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-    gap: 10px 16px; padding: 4px 0 14px 22px;
+    gap: 10px 16px; margin: 0;
   }
-  .detalle-tipologia div { font-size: 13px; }
+  .detalle-tipologia .pares div { font-size: 13px; }
   .detalle-tipologia dt { color: var(--ink-2); font-size: 11.5px; }
   .detalle-tipologia dd { margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+  .subtabla { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--grid); }
+  .subtabla h4 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--ink-mute); margin: 0 0 6px; font-weight: 600; }
+  .fila-sub { display: flex; gap: 12px; align-items: baseline; font-size: 13px; padding: 3px 0; }
+  .fila-sub .nombre { flex: 1; min-width: 0; }
+  .fila-sub .cifra, .fila-sub .pct { font-variant-numeric: tabular-nums; }
+  .fila-sub .pct { color: var(--ink-2); min-width: 48px; text-align: right; }
   .barra-fila { height: 5px; border-radius: 3px; background: var(--grid); margin: 0 0 9px 20px; }
   .barra-fila i { display: block; height: 100%; border-radius: 3px; background: var(--serie-1); }
   /* Seis dias: en fila en pantalla ancha, dos filas de tres en el movil. */
@@ -116,12 +124,22 @@
   .dia-tiempo .cuando { font-size: 11.5px; color: var(--ink-2); text-transform: capitalize; }
   /* Alto fijo y centrado por flex: dejar que la caja la dictara el SVG en linea
      hacia que se desbordara y el rotulo se montara encima del dibujo. */
-  .dia-tiempo .simbolo { height: 42px; display: flex; align-items: center; justify-content: center;
-    --sol: #eda100; --nube: #b9bcc2; --agua: #2a78d6; --rayo: #eda100; }
+  .dia-tiempo .simbolo { height: 42px; display: flex; align-items: center; justify-content: center; }
   .dia-tiempo .simbolo svg { display: block; width: 34px; height: 37px; flex: none; }
+  /* El color va aqui, en CSS, y no en atributos fill="var(...)": Safari no
+     resuelve variables CSS dentro de atributos de presentacion de SVG. */
+  .simbolo .t-sol { fill: #eda100; stroke: #eda100; }
+  .simbolo .t-nube { fill: #b9bcc2; }
+  .simbolo .t-nube-linea { stroke: #b9bcc2; fill: none; }
+  .simbolo .t-agua { stroke: #2a78d6; fill: none; }
+  .simbolo .t-rayo { fill: #eda100; }
   .dia-tiempo .cielo { font-size: 11px; color: var(--ink-2); margin-bottom: 2px; }
   @media (prefers-color-scheme: dark) {
-    .dia-tiempo .simbolo { --sol: #e0b23a; --nube: #7f858e; --agua: #6aa6ee; --rayo: #e0b23a; }
+    .simbolo .t-sol { fill: #e0b23a; stroke: #e0b23a; }
+    .simbolo .t-nube { fill: #7f858e; }
+    .simbolo .t-nube-linea { stroke: #7f858e; }
+    .simbolo .t-agua { stroke: #6aa6ee; }
+    .simbolo .t-rayo { fill: #e0b23a; }
   }
   .dia-tiempo .temps { font-size: 13.5px; font-variant-numeric: tabular-nums; }
   .dia-tiempo .temps .min { color: var(--ink-2); }
@@ -726,10 +744,22 @@
         </button>
         ${opciones.barra ? `<div class="barra-fila" aria-hidden="true"><i style="width:${
           Math.max(item.valor / max * 100, 1)}%"></i></div>` : ""}
-        <dl class="detalle-tipologia oculto" id="${raiz}-${i}">
-          ${(item.detalle || []).map(([etq, val]) => `
-            <div><dt>${etq}</dt><dd>${val}</dd></div>`).join("")}
-        </dl>
+        <div class="detalle-tipologia oculto" id="${raiz}-${i}">
+          <dl class="pares">
+            ${(item.detalle || []).map(([etq, val]) => `
+              <div><dt>${etq}</dt><dd>${val}</dd></div>`).join("")}
+          </dl>
+          ${item.subtabla && item.subtabla.filas.length ? `
+            <div class="subtabla">
+              <h4>${item.subtabla.titulo}</h4>
+              ${item.subtabla.filas.map(([nombre, valor, pct]) => `
+                <div class="fila-sub">
+                  <span class="nombre">${nombre}</span>
+                  <span class="cifra">${valor}</span>
+                  <span class="pct">${pct}</span>
+                </div>`).join("")}
+            </div>` : ""}
+        </div>
       </div>`).join("");
 
     destino.querySelectorAll(".fila-leyenda").forEach(boton => {
@@ -939,6 +969,9 @@
         parcelas: [...agrupar(grupo, f => f.ref_sigpac)]
           .map(([ref, g]) => ({
             ref, nombre: g[0].parcela, superficie: g[0].superficie_ha || null,
+            tipos: [...agrupar(g, f => f.variedad || "(sin variedad)")]
+              .map(([variedad, gt]) => ({ variedad, ...resumir(gt) }))
+              .sort((a, b) => b.kg - a.kg),
             // Una parcela puede entregar mas de una variedad a lo largo de la
             // campana; se listan todas en vez de quedarse con la primera.
             variedad: [...new Set(g.map(f => f.variedad).filter(Boolean))].join(" · "),
@@ -999,7 +1032,6 @@
         : `<span class="sin-nombre">sin nombre</span> <span class="ref">— ${p.ref}</span>`,
       valor: p.kg, texto: nf(p.kg) + " kg",
       detalle: [
-        ["Variedad", p.variedad || "—"],
         ["Descargas", nf(p.descargas)],
         ["Grado medio", nf(p.grado, 2) + "%"],
         ["Color medio", nf(p.color, 2)],
@@ -1008,7 +1040,14 @@
         ["Rendimiento", p.rendimiento ? nf(p.rendimiento) + " kg/ha" : "—"],
         ["Primera entrada", p.primera ? fechaLarga(p.primera) : "—"],
         ["Última entrada", p.ultima ? fechaLarga(p.ultima) : "—"],
-      ]
+      ],
+      // La variedad suelta sobra: el desglose de abajo la dice, y con sus kilos.
+      subtabla: {
+        titulo: p.tipos.length > 1 ? "Kilos por tipología" : "Tipología",
+        filas: p.tipos.map(t => [
+          t.variedad, nf(t.kg) + " kg", nf(t.kg / (p.kg || 1) * 100, 1) + "%",
+        ]),
+      },
     // Sin cuadro de color: aqui no hay grafico al que corresponda, y darle un
     // color por posicion sugeriria una identidad que cambiaria al reordenar.
     })), { barra: true, llave: false, vacio: "Todavía no hay parcelas volcadas." });
@@ -1142,42 +1181,37 @@
 
   // Iconos dibujados, no emoji: en iOS varios caracteres del tiempo no llevan
   // presentacion de emoji por defecto y Safari los pinta como glifo monocromo.
-  const SOL = '<circle cx="8.5" cy="8.5" r="4" fill="var(--sol)"/>'
-    + [0, 45, 90, 135, 180, 225, 270, 315].map(g => {
-        const a = g * Math.PI / 180, r1 = 5.8, r2 = 7.8;
-        return `<line x1="${(8.5 + Math.cos(a) * r1).toFixed(2)}" y1="${(8.5 + Math.sin(a) * r1).toFixed(2)}"
-                      x2="${(8.5 + Math.cos(a) * r2).toFixed(2)}" y2="${(8.5 + Math.sin(a) * r2).toFixed(2)}"
-                      stroke="var(--sol)" stroke-width="1.6" stroke-linecap="round"/>`;
-      }).join("");
-  const NUBE = '<path d="M7.5 20h9.2a3.8 3.8 0 0 0 .4-7.6 5.4 5.4 0 0 0-10.3-1A3.8 3.8 0 0 0 7.5 20z"'
-    + ' fill="var(--nube)"/>';
-  const gota = (x, y, l = 3.4) => `<line x1="${x}" y1="${y}" x2="${x - 1}" y2="${y + l}"
-    stroke="var(--agua)" stroke-width="1.8" stroke-linecap="round"/>`;
-  const copo = (x, y) => `<g stroke="var(--agua)" stroke-width="1.4" stroke-linecap="round">
+  // Los colores van por CLASE y no con fill="var(...)": Safari no resuelve las
+  // variables CSS dentro de atributos de presentacion de SVG, aunque Chrome si.
+  const rayos = (cx, cy, r1, r2, gr) => [0, 45, 90, 135, 180, 225, 270, 315].map(g => {
+    const a = g * Math.PI / 180;
+    return `<line class="t-sol" x1="${(cx + Math.cos(a) * r1).toFixed(2)}" y1="${(cy + Math.sin(a) * r1).toFixed(2)}"
+                  x2="${(cx + Math.cos(a) * r2).toFixed(2)}" y2="${(cy + Math.sin(a) * r2).toFixed(2)}"
+                  stroke-width="${gr}" stroke-linecap="round"/>`;
+  }).join("");
+  const SOL = `<circle class="t-sol" cx="8.5" cy="8.5" r="4"/>` + rayos(8.5, 8.5, 5.8, 7.8, 1.6);
+  const NUBE = '<path class="t-nube" d="M7.5 20h9.2a3.8 3.8 0 0 0 .4-7.6 5.4 5.4 0 0 0-10.3-1A3.8 3.8 0 0 0 7.5 20z"/>';
+  const gota = (x, y, l = 3.4) => `<line class="t-agua" x1="${x}" y1="${y}" x2="${x - 1}" y2="${y + l}"
+    stroke-width="1.8" stroke-linecap="round"/>`;
+  const copo = (x, y) => `<g class="t-agua" stroke-width="1.4" stroke-linecap="round">
     <line x1="${x - 1.6}" y1="${y}" x2="${x + 1.6}" y2="${y}"/>
     <line x1="${x - .8}" y1="${y - 1.4}" x2="${x + .8}" y2="${y + 1.4}"/>
     <line x1="${x + .8}" y1="${y - 1.4}" x2="${x - .8}" y2="${y + 1.4}"/></g>`;
 
   const ICONOS = {
-    despejado: `<circle cx="12" cy="12" r="5.2" fill="var(--sol)"/>`
-      + [0, 45, 90, 135, 180, 225, 270, 315].map(g => {
-          const a = g * Math.PI / 180;
-          return `<line x1="${(12 + Math.cos(a) * 7.2).toFixed(2)}" y1="${(12 + Math.sin(a) * 7.2).toFixed(2)}"
-                        x2="${(12 + Math.cos(a) * 9.6).toFixed(2)}" y2="${(12 + Math.sin(a) * 9.6).toFixed(2)}"
-                        stroke="var(--sol)" stroke-width="1.8" stroke-linecap="round"/>`;
-        }).join(""),
+    despejado: `<circle class="t-sol" cx="12" cy="12" r="5.2"/>` + rayos(12, 12, 7.2, 9.6, 1.8),
     nubes: SOL + NUBE,
-    niebla: NUBE + `<g stroke="var(--nube)" stroke-width="1.8" stroke-linecap="round">
-      <line x1="4" y1="22.4" x2="14" y2="22.4"/><line x1="16.5" y1="22.4" x2="20.5" y2="22.4"/></g>`,
+    niebla: NUBE + `<g class="t-nube-linea" stroke-width="1.8" stroke-linecap="round">
+      <line x1="4" y1="22.6" x2="14" y2="22.6"/><line x1="16.5" y1="22.6" x2="20.5" y2="22.6"/></g>`,
     llovizna: NUBE + gota(10, 21) + gota(14.5, 21),
     lluvia: NUBE + gota(8.5, 21) + gota(12.5, 21) + gota(16.5, 21),
     chubascos: SOL + NUBE + gota(10, 21) + gota(15, 21),
     nieve: NUBE + copo(10, 22.4) + copo(15, 22.4),
-    tormenta: NUBE + `<path d="M13 20.4l-3.2 4.4h2.4l-1.2 3.4 3.8-4.8h-2.4l1.4-3z"
-      fill="var(--rayo)" transform="translate(0,-2)"/>` + gota(9, 21),
+    tormenta: NUBE + `<path class="t-rayo" d="M13 18.4l-3.2 4.4h2.4l-1.2 3.4 3.8-4.8h-2.4l1.4-3z"/>`
+      + gota(9, 21),
   };
   const dibujoCielo = clave => ICONOS[clave]
-    ? `<svg viewBox="0 0 24 26" width="34" height="34" role="img" aria-hidden="true">${ICONOS[clave]}</svg>`
+    ? `<svg viewBox="0 0 24 26" role="img" aria-hidden="true">${ICONOS[clave]}</svg>`
     : "";
 
   const diaSemana = f => new Date(f + "T12:00:00")

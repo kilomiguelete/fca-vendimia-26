@@ -160,15 +160,17 @@ su detalle al pulsarla** -kilos, porcentaje, descargas, parcelas y medias de
 grado, color y gluconico-, en vez de una tabla siempre abierta.
 
 En el listado de parcelas la fila muestra **nombre o apodo - referencia SIGPAC**,
-sus kilos y una barra con su proporcion; el detalle trae variedad, descargas,
-medias de grado, color y gluconico, superficie, rendimiento y las fechas de la
-primera y la ultima entrada. Ahi las barras van todas del mismo color: no hay
+sus kilos y una barra con su proporcion; el detalle trae descargas, medias de
+grado, color y gluconico, superficie, rendimiento, las fechas de primera y
+ultima entrada, y **los kilos que ha dado cada tipologia** en esa parcela. Ahi las barras van todas del mismo color: no hay
 grafico al que correspondan, y colorearlas por posicion sugeriria una identidad
 que cambiaria al reordenar la lista.
 
 Despues la **prevision de Higueruela** (`/api/tiempo`, datos de Open-Meteo):
 seis dias, en fila en pantalla ancha y en dos filas de tres en el movil. Los
-simbolos del cielo van **dibujados en SVG, no en emoji**: varios caracteres del
+simbolos del cielo van **dibujados en SVG, no en emoji**, y su color va en CSS
+por clase, **nunca en atributos** `fill="var(...)"`: Safari no resuelve las
+variables CSS dentro de atributos de presentacion de SVG, aunque Chrome si: varios caracteres del
 tiempo (sol, lluvia, niebla, tormenta) no llevan presentacion de emoji por
 defecto y Safari en iPhone los pintaba como glifo monocromo. La API devuelve una
 clave (`despejado`, `lluvia`, ...) y el dibujo lo pone el navegador, con su
