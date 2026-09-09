@@ -7,43 +7,51 @@
 <style>
   :root {
     color-scheme: light;
-    --plano:      #f9f9f7;
-    --surface-1:  #fcfcfb;
-    --ink:        #0b0b0b;
-    --ink-2:      #52514e;
-    --ink-mute:   #898781;
-    --grid:       #e1e0d9;
-    --eje:        #c3c2b7;
-    --borde:      rgba(11,11,11,0.10);
-    --serie-1:    #2a78d6;
-    --serie-2:    #eb6834;
-    --serie-3:    #1baf7a;
-    --serie-4:    #eda100;
-    --serie-5:    #e87ba4;
-    --serie-6:    #008300;
-    --serie-7:    #4a3aa7;
-    --serie-8:    #e34948;
-    --aviso:      #fab219;
+    /* Tonos de vendimia: crema de mosto, tinta con matiz de uva, vino de marca. */
+    --plano:      #faf6f0;
+    --surface-1:  #fffdf9;
+    --ink:        #241a1c;
+    --ink-2:      #5e4a4d;
+    --ink-mute:   #8d7a76;
+    --grid:       #ebe0d5;
+    --eje:        #d3c3b4;
+    --borde:      rgba(36,26,28,0.11);
+    --vino:       #7b2038;   /* marca: botones, enlaces y series de un solo dato */
+    --lluvia:     #2a78d6;   /* el agua sigue siendo azul, no vino */
+    /* Serie categorica: los ocho tonos validados, con el vino y la uva delante.
+       Es el orden validado del reves, que conserva todas las parejas contiguas. */
+    --serie-1:    #e34948;
+    --serie-2:    #4a3aa7;
+    --serie-3:    #008300;
+    --serie-4:    #e87ba4;
+    --serie-5:    #eda100;
+    --serie-6:    #1baf7a;
+    --serie-7:    #eb6834;
+    --serie-8:    #2a78d6;
+    --aviso:      #d98c0a;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
-      --plano:     #0d0d0d;
-      --surface-1: #1a1a19;
-      --ink:       #ffffff;
-      --ink-2:     #c3c2b7;
-      --ink-mute:  #898781;
-      --grid:      #2c2c2a;
-      --eje:       #383835;
-      --borde:     rgba(255,255,255,0.10);
-      --serie-1:   #3987e5;
-      --serie-2:   #d95926;
-      --serie-3:   #199e70;
-      --serie-4:   #c98500;
-      --serie-5:   #d55181;
-      --serie-6:   #008300;
-      --serie-7:   #9085e9;
-      --serie-8:   #e66767;
+      --plano:     #14100f;
+      --surface-1: #1f1a18;
+      --ink:       #fdf8f3;
+      --ink-2:     #cbbdb4;
+      --ink-mute:  #948379;
+      --grid:      #322925;
+      --eje:       #40342e;
+      --borde:     rgba(253,248,243,0.11);
+      --vino:      #c4566e;
+      --lluvia:    #6aa6ee;
+      --serie-1:   #e66767;
+      --serie-2:   #9085e9;
+      --serie-3:   #008300;
+      --serie-4:   #d55181;
+      --serie-5:   #c98500;
+      --serie-6:   #199e70;
+      --serie-7:   #d95926;
+      --serie-8:   #3987e5;
+      --aviso:     #e0a53a;
     }
   }
   * { box-sizing: border-box; }
@@ -76,6 +84,15 @@
     align-items: flex-start; justify-content: space-between;
   }
   .cabecera-panel .nota { margin-bottom: 14px; }
+  .panel.plegado .cabecera-panel .nota { margin-bottom: 0; }
+  .plegar {
+    font: inherit; font-size: 12px; line-height: 1; cursor: pointer; color: var(--ink-2);
+    width: 22px; height: 22px; margin-right: 8px; padding: 0; vertical-align: 1px;
+    border: 1px solid var(--borde); border-radius: 6px; background: var(--plano);
+  }
+  .plegar:hover { border-color: var(--ink-mute); color: var(--ink); }
+  .plegar span { display: block; transition: transform .15s; }
+  .plegar[aria-expanded="false"] span { transform: rotate(-90deg); }
   .rejilla-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
     gap: 20px; margin-top: 20px; }
   .rejilla-2 .panel { margin-top: 0; }
@@ -112,15 +129,15 @@
   .fila-sub .cifra, .fila-sub .pct { font-variant-numeric: tabular-nums; }
   .fila-sub .pct { color: var(--ink-2); min-width: 48px; text-align: right; }
   .barra-fila { height: 5px; border-radius: 3px; background: var(--grid); margin: 0 0 9px 20px; }
-  .barra-fila i { display: block; height: 100%; border-radius: 3px; background: var(--serie-1); }
+  .barra-fila i { display: block; height: 100%; border-radius: 3px; background: var(--vino); }
   /* Seis dias: en fila en pantalla ancha, dos filas de tres en el movil. */
   .dias-tiempo { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
   @media (max-width: 760px) { .dias-tiempo { grid-template-columns: repeat(3, 1fr); gap: 6px; } }
   .dia-tiempo {
     border: 1px solid var(--borde); border-radius: 10px; padding: 10px 8px; text-align: center;
   }
-  .dia-tiempo.llueve { border-color: var(--serie-1);
-    background: color-mix(in srgb, var(--serie-1) 7%, transparent); }
+  .dia-tiempo.llueve { border-color: var(--lluvia);
+    background: color-mix(in srgb, var(--lluvia) 8%, transparent); }
   .dia-tiempo .cuando { font-size: 11.5px; color: var(--ink-2); text-transform: capitalize; }
   /* Alto fijo y centrado por flex: dejar que la caja la dictara el SVG en linea
      hacia que se desbordara y el rotulo se montara encima del dibujo. */
@@ -144,7 +161,7 @@
   .dia-tiempo .temps { font-size: 13.5px; font-variant-numeric: tabular-nums; }
   .dia-tiempo .temps .min { color: var(--ink-2); }
   .dia-tiempo .agua { font-size: 11.5px; margin-top: 3px; font-variant-numeric: tabular-nums; }
-  .dia-tiempo .agua.hay { color: var(--serie-1); font-weight: 600; }
+  .dia-tiempo .agua.hay { color: var(--lluvia); font-weight: 600; }
   .dia-tiempo .agua.no { color: var(--ink-mute); }
   .aviso {
     display: flex; gap: 10px; align-items: flex-start;
@@ -192,7 +209,7 @@
     border: 1px solid var(--borde); background: var(--surface-1); color: var(--ink);
   }
   .boton:hover { border-color: var(--ink-mute); }
-  .boton.principal { background: var(--serie-1); border-color: var(--serie-1); color: #fff; }
+  .boton.principal { background: var(--vino); border-color: var(--vino); color: #fff; }
   .boton.principal:hover { filter: brightness(1.07); }
   .boton:disabled { opacity: .55; cursor: default; }
   a.boton { text-decoration: none; display: inline-block; }
@@ -209,7 +226,7 @@
     border: 1px solid var(--borde); background: var(--plano); color: var(--ink);
   }
   .error { color: #d03b3b; font-size: 12.5px; margin-top: 10px; }
-  .revision { border-left: 3px solid var(--serie-2); }
+  .revision { border-left: 3px solid var(--vino); }
   .borrador { border-top: 1px solid var(--grid); padding-top: 20px; margin-top: 20px; }
   .borrador:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
   .par { display: grid; grid-template-columns: minmax(240px, 340px) 1fr; gap: 22px; }
@@ -221,7 +238,7 @@
     font: inherit; width: 100%; padding: 7px 9px; border-radius: 7px;
     border: 1px solid var(--borde); background: var(--plano); color: var(--ink);
   }
-  .campo input:focus { outline: 2px solid var(--serie-1); outline-offset: -1px; }
+  .campo input:focus { outline: 2px solid var(--vino); outline-offset: -1px; }
   .campo.marcado input { border-color: var(--aviso); background: color-mix(in srgb, var(--aviso) 8%, var(--plano)); }
   .campo.mal input { border-color: #d03b3b; background: color-mix(in srgb, #d03b3b 7%, var(--plano)); }
   .grupo { margin-bottom: 16px; }
@@ -244,7 +261,7 @@
   .subida .estado { color: var(--ink-2); text-align: right; }
   .subida .punto { width: 8px; height: 8px; border-radius: 50%; flex: none;
     background: var(--ink-mute); }
-  .subida.leyendo .punto { background: var(--serie-1); }
+  .subida.leyendo .punto { background: var(--vino); }
   .subida.hecho .punto { background: #0ca30c; }
   .subida.error .punto { background: #d03b3b; }
   .subida.error .estado { color: #d03b3b; }
@@ -286,8 +303,8 @@
   }
   .cajon button:hover { background: var(--plano); }
   .cajon button[aria-current="true"] { background: var(--plano); border-color: var(--borde); font-weight: 600; }
-  .cajon .boton.principal { background: var(--serie-1); border-color: var(--serie-1); color: #fff; }
-  .cajon .boton.principal:hover { filter: brightness(1.07); background: var(--serie-1); }
+  .cajon .boton.principal { background: var(--vino); border-color: var(--vino); color: #fff; }
+  .cajon .boton.principal:hover { filter: brightness(1.1); background: var(--vino); }
   .separador { height: 1px; background: var(--borde); margin: 12px 6px; }
   .guardado { font-size: 12px; color: #006300; margin-left: 8px; }
   @media (prefers-color-scheme: dark) { .guardado { color: #0ca30c; } }
@@ -302,7 +319,7 @@
   }
   .enlace-ticket {
     font: inherit; padding: 0; border: none; background: none; cursor: pointer;
-    color: var(--serie-1); text-decoration: underline; text-underline-offset: 2px;
+    color: var(--vino); text-decoration: underline; text-underline-offset: 2px;
   }
   .visor {
     position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.78);
@@ -799,7 +816,7 @@
       const y = escalaY(item.valor), h = Math.max(y0 - y, 2), r = Math.min(4, grosor / 2, h);
       const d = `M${cx - grosor / 2},${y0} V${y + r} a${r},${r} 0 0 1 ${r},${-r}
                  H${cx + grosor / 2 - r} a${r},${r} 0 0 1 ${r},${r} V${y0} Z`;
-      el("path", { d, fill: `var(${SERIES[0]})` }, s);
+      el("path", { d, fill: "var(--vino)" }, s);
       const cada = Math.ceil(items.length / Math.max(Math.floor(ancho / 52), 2));
       if (i % cada === 0) {
         const tx = el("text", { x: cx, y: y0 + 15, "text-anchor": "middle",
@@ -843,12 +860,12 @@
     const conIndice = items.map((it, i) => ({ ...it, i })).filter(it => it.valor != null);
     if (conIndice.length > 1) {
       const d = conIndice.map((p, k) => `${k ? "L" : "M"}${escalaX(p.i)},${escalaY(p.valor)}`).join(" ");
-      el("path", { d, fill: "none", stroke: `var(${SERIES[0]})`, "stroke-width": 2,
+      el("path", { d, fill: "none", stroke: "var(--vino)", "stroke-width": 2,
                    "stroke-linejoin": "round", "stroke-linecap": "round" }, s);
     }
     conIndice.forEach(p => {
       el("circle", { cx: escalaX(p.i), cy: escalaY(p.valor), r: 5,
-                     fill: `var(${SERIES[0]})`, stroke: "var(--surface-1)", "stroke-width": 2 }, s);
+                     fill: "var(--vino)", stroke: "var(--surface-1)", "stroke-width": 2 }, s);
       const zona = el("circle", { cx: escalaX(p.i), cy: escalaY(p.valor), r: 16, fill: "transparent" }, s);
       conPista(zona, fechaLarga(p.fecha), p.detalle);
       const cada = Math.ceil(items.length / Math.max(Math.floor(ancho / 52), 2));
@@ -1172,6 +1189,73 @@
         } catch (e) {
           alert("No se pudo borrar: " + e.message);
           boton.disabled = false;
+        }
+      });
+    });
+  }
+
+  /* --- Paneles plegables ---
+     Se montan sobre la estructura ya escrita: la cabecera de cada panel gana un
+     boton y todo lo que va debajo se envuelve. El resumen de arriba no es un
+     panel, asi que se queda siempre a la vista. */
+  function recordar(clave, valor) {
+    try { localStorage.setItem("plegado:" + clave, valor ? "1" : "0"); } catch {}
+  }
+  function estabaPlegado(clave) {
+    try { return localStorage.getItem("plegado:" + clave) === "1"; } catch { return false; }
+  }
+
+  function hacerPlegables() {
+    document.querySelectorAll("#vista-panel .panel").forEach(panel => {
+      if (panel.dataset.plegable) return;
+      const h2 = panel.querySelector("h2");
+      if (!h2) return;
+      panel.dataset.plegable = "1";
+
+      // La cabecera es el bloque con titulo y controles, si lo hay; si no, el
+      // titulo y su nota.
+      let cabecera = panel.querySelector(":scope > .cabecera-panel");
+      if (!cabecera) {
+        cabecera = document.createElement("div");
+        cabecera.className = "cabecera-panel";
+        h2.before(cabecera);
+        const suelto = document.createElement("div");
+        cabecera.appendChild(suelto);
+        suelto.appendChild(h2);
+        const nota = cabecera.nextElementSibling;
+        if (nota && nota.classList.contains("nota")) suelto.appendChild(nota);
+      }
+
+      const cuerpo = document.createElement("div");
+      cuerpo.className = "cuerpo";
+      while (cabecera.nextSibling) cuerpo.appendChild(cabecera.nextSibling);
+      panel.appendChild(cuerpo);
+
+      const clave = h2.textContent.trim().replace(/\s*\(.*/, "");
+      const boton = document.createElement("button");
+      boton.className = "plegar";
+      boton.type = "button";
+      boton.setAttribute("aria-label", "Plegar o desplegar " + clave);
+      boton.innerHTML = '<span aria-hidden="true">▾</span>';
+      h2.prepend(boton);
+
+      const aplicar = plegado => {
+        cuerpo.classList.toggle("oculto", plegado);
+        boton.setAttribute("aria-expanded", String(!plegado));
+        panel.classList.toggle("plegado", plegado);
+      };
+      aplicar(estabaPlegado(clave));
+
+      boton.addEventListener("click", e => {
+        e.stopPropagation();
+        const plegado = boton.getAttribute("aria-expanded") === "true";
+        aplicar(plegado);
+        recordar(clave, plegado);
+        // Al desplegar hay que redibujar: los graficos se miden al ancho del
+        // hueco, y plegado ese ancho es cero.
+        if (!plegado) {
+          const sel = document.getElementById("selector");
+          if (sel.value && D.campanias.length) pintar(sel.value);
         }
       });
     });
@@ -1721,6 +1805,7 @@
       pintar(document.getElementById("selector").value);
     });
     await cargarDatos();
+    hacerPlegables();
     await cargarBorradores();
     cargarTiempo();   // sin await: la previsión no debe retrasar el panel
   }

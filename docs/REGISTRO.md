@@ -151,6 +151,23 @@ volver a entrar.
 `db/esquema.sql` crea las tablas y los indices; `db/datos_iniciales.sql` carga
 lo ya volcado a mano.
 
+### Colores
+
+Tonos de vendimia: fondo crema de mosto, tinta con matiz de uva y un vino de
+marca (`--vino`) para botones, enlaces y las series de un solo dato. La serie
+categorica -la del quesito y la comparativa- son los mismos ocho tonos
+validados de antes **en orden inverso**, que deja el vino y la uva delante sin
+tocar ninguna pareja contigua: al invertir un camino, las parejas se conservan,
+y por eso sigue pasando el validador en claro y en oscuro. La lluvia mantiene su
+azul propio (`--lluvia`): tenirla de vino la haria parecer una alarma.
+
+### Paneles plegables
+
+Todas las secciones del panel se pliegan desde el boton de su titulo; el resumen
+de arriba no, que es la lectura de un vistazo. Lo plegado se recuerda en el
+navegador. Al desplegar se redibuja: los graficos se miden al ancho del hueco y
+plegado ese ancho es cero.
+
 ### Orden del panel
 
 Resumen en seis tarjetas (kilos, grado, color, gluconico, parcelas y dias de
