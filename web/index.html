@@ -1621,10 +1621,34 @@
     cargarTiempo();   // sin await: la previsión no debe retrasar el panel
   }
 
+  /* Enlace de acceso directo: la clave viaja en el fragmento (#clave=...), no en
+     la consulta (?clave=...). El fragmento NO se envia al servidor, asi que no
+     acaba en los registros de peticiones; y se borra de la barra en cuanto se
+     usa, para que no quede a la vista ni en el historial. */
+  async function claveDelEnlace() {
+    const m = location.hash.match(/(?:^#|&)clave=([^&]+)/);
+    if (!m) return false;
+    const clave = decodeURIComponent(m[1]);
+    history.replaceState(null, "", location.pathname + location.search);
+    try {
+      await pedir("/api/entrar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clave }),
+      });
+      return true;
+    } catch (e) {
+      errorClave.textContent = "El enlace no vale: " + e.message;
+      errorClave.classList.remove("oculto");
+      return false;
+    }
+  }
+
   (async () => {
     let estado = {};
     try { estado = await pedir("/api/entrar"); } catch {}
     if (estado.dentro) { await abrir(); return; }
+    if (await claveDelEnlace()) { await abrir(); return; }
     if (estado.configurado === false) {
       errorClave.textContent = "Faltan variables de entorno en Vercel: "
         + (estado.faltan || []).join(", ") + ". Hasta que estén puestas no se puede entrar.";

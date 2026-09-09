@@ -126,6 +126,19 @@ comprobacion, es ruido que se acaba ignorando.
   es de navegador, asi que cualquier JSON servido junto al HTML seria
   descargable sin contrasena. Todo dato pasa por `/api/datos`, que exige cookie.
 
+### Enlace de acceso directo
+
+`https://…/#clave=LA_CONTRASEÑA` entra sin teclear nada. La clave va en el
+**fragmento** (`#`), no en la consulta (`?`): el fragmento no se envia al
+servidor, asi que no aparece en los registros de peticiones de Vercel. Nada mas
+usarlo se borra de la barra de direcciones, de modo que no queda a la vista ni
+en el historial de navegacion.
+
+Aun asi, **quien tenga ese enlace tiene la contrasena**: vale para el movil
+propio o para darselo a alguien de confianza, no para publicarlo. Para
+revocarlo hay que cambiar `CLAVE_ACCESO` en Vercel, lo que obliga a todos a
+volver a entrar.
+
 ### Variables de entorno (en Vercel)
 
 | Variable | Para que |
