@@ -161,6 +161,14 @@ tocar ninguna pareja contigua: al invertir un camino, las parejas se conservan,
 y por eso sigue pasando el validador en claro y en oscuro. La lluvia mantiene su
 azul propio (`--lluvia`): tenirla de vino la haria parecer una alarma.
 
+### Por completar
+
+El menu tiene una seccion **Pendientes**, con una cuenta al lado, que lista lo
+que falta por rellenar: parcelas sin nombre, parcelas sin superficie y descargas
+sin hora. Cada bloque dice **por que importa** y donde se corrige, no solo que
+falta. El aviso resumido del panel vive al final, no arriba: es un recordatorio,
+no la primera lectura del dia, y desde el se salta al detalle.
+
 ### Tema claro u oscuro
 
 Sin elegir nada, el sitio sigue al sistema. El boton del menu fija uno de los

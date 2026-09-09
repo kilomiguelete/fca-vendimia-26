@@ -333,6 +333,24 @@
   }
   .cajon button:hover { background: var(--plano); }
   .cajon button[aria-current="true"] { background: var(--plano); border-color: var(--borde); font-weight: 600; }
+  .cajon .cuenta {
+    display: inline-block; min-width: 20px; padding: 1px 6px; margin-left: 6px;
+    border-radius: 10px; background: var(--aviso); color: #241a1c;
+    font-size: 11.5px; font-weight: 600; text-align: center;
+  }
+  .bloque-pendiente { border-top: 1px solid var(--grid); padding: 14px 0 4px; }
+  .bloque-pendiente:first-child { border-top: none; padding-top: 0; }
+  .bloque-pendiente h3 { font-size: 13.5px; margin: 0 0 3px; }
+  .bloque-pendiente .porque { color: var(--ink-2); font-size: 12.5px; margin: 0 0 10px; }
+  .pendiente {
+    display: flex; gap: 12px; align-items: baseline; font-size: 13px; padding: 5px 0;
+    border-top: 1px solid var(--grid);
+  }
+  .pendiente .que { flex: 1; min-width: 0; }
+  .pendiente .donde { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .todo-hecho { color: #006300; font-size: 13px; }
+  :root:not([data-theme="light"]) .todo-hecho { color: #0ca30c; }
+  :root[data-theme="dark"] .todo-hecho { color: #0ca30c; }
   .cajon .boton.principal { background: var(--vino); border-color: var(--vino); color: #fff; }
   .cajon .boton.principal:hover { filter: brightness(1.1); background: var(--vino); }
   .separador { height: 1px; background: var(--borde); margin: 12px 6px; }
@@ -443,6 +461,7 @@
     <div class="separador"></div>
     <button data-vista="panel" aria-current="true">Panel</button>
     <button data-vista="parcelas">Parcelas</button>
+    <button data-vista="pendientes">Pendientes <span id="cuenta-pendientes"></span></button>
     <div class="separador"></div>
     <button id="b-tema"></button>
   </nav>
@@ -460,7 +479,6 @@
   </div>
 
   <div class="tarjetas" id="tarjetas"></div>
-  <div id="aviso-cobertura"></div>
 
   <div class="panel">
     <h2>Kilos por tipología</h2>
@@ -535,6 +553,7 @@
     <div class="desplaza"><table id="t-descargas" class="compacta fichas"></table></div>
   </div>
 
+  <div id="aviso-cobertura"></div>
   </div><!-- fin vista-panel -->
 
   <div id="vista-parcelas" class="oculto">
@@ -546,6 +565,16 @@
         salir del campo, así que se puede ir completando poco a poco.</p>
       <div id="pendientes-parcelas"></div>
       <div class="desplaza"><table id="t-parcelas-edit" class="fichas"></table></div>
+    </div>
+  </div>
+
+  <div id="vista-pendientes" class="oculto">
+    <div class="panel" style="margin-top:0">
+      <h2>Por completar</h2>
+      <p class="nota">Lo que falta por rellenar, con el detalle de qué y dónde.
+        El registro funciona igual sin ello; lo que no se puede es calcular lo
+        que dependa de estos datos.</p>
+      <div id="lista-pendientes"></div>
     </div>
   </div>
 
@@ -1073,9 +1102,11 @@
       + " (sin ella no hay kg/ha)");
     document.getElementById("aviso-cobertura").innerHTML = faltan.length
       ? `<div class="aviso"><span>⚠</span><div><strong>Datos pendientes.</strong>
-         Falta ${faltan.join(", ")}. El ticket de báscula no imprime la hora:
-         se teclea al confirmar, desde el parte de campo.</div></div>`
+         Falta ${faltan.join(", ")}.
+         <button class="enlace-ticket" id="ir-pendientes">Ver el detalle</button></div></div>`
       : "";
+    const irPend = document.getElementById("ir-pendientes");
+    if (irPend) irPend.addEventListener("click", () => irA("pendientes"));
 
     listaDesplegable(document.getElementById("lista-parcelas"), c.parcelas.map(p => ({
       // Lo que se ve para escoger: nombre o apodo, y detras el SIGPAC.
@@ -1425,6 +1456,7 @@
     const datos = await pedir("/api/datos");
     D = { finca: datos.finca, bodega: datos.bodega, campanias: agregar(datos) };
     render();
+    cargarPendientes();   // mantiene al dia la cuenta del menu
   }
 
   /* --- Subida de tickets --- */
@@ -1731,15 +1763,70 @@
   });
 
   async function irA(vista) {
-    document.getElementById("vista-panel").classList.toggle("oculto", vista !== "panel");
-    document.getElementById("vista-parcelas").classList.toggle("oculto", vista !== "parcelas");
+    ["panel", "parcelas", "pendientes"].forEach(v =>
+      document.getElementById("vista-" + v).classList.toggle("oculto", v !== vista));
     cajon.querySelectorAll("[data-vista]").forEach(b =>
       b.setAttribute("aria-current", String(b.dataset.vista === vista)));
     menu(false);
     if (vista === "parcelas") await cargarParcelas();
+    if (vista === "pendientes") await cargarPendientes();
   }
   cajon.querySelectorAll("[data-vista]").forEach(b =>
     b.addEventListener("click", () => irA(b.dataset.vista)));
+
+  /* --- Por completar --- */
+  async function cargarPendientes() {
+    const destino = document.getElementById("lista-pendientes");
+    const c = D.campanias.find(x => x.campania === document.getElementById("selector").value)
+      || D.campanias[D.campanias.length - 1];
+
+    let parcelas = [];
+    try { parcelas = (await pedir("/api/parcelas")).parcelas; } catch {}
+
+    const bloques = [
+      {
+        titulo: "Parcelas sin nombre",
+        porque: "Sin nombre se muestran por su referencia SIGPAC, que no dice nada "
+              + "de un vistazo. Se rellena en la sección Parcelas.",
+        filas: parcelas.filter(p => !p.nombre_finca).map(p => [
+          [p.poligono, p.parcela, p.subparcela].filter(Boolean).join("/"),
+          p.kg ? nf(p.kg) + " kg" : "sin entradas",
+        ]),
+      },
+      {
+        titulo: "Parcelas sin superficie",
+        porque: "Sin hectáreas no se puede calcular el rendimiento en kg/ha, que es "
+              + "lo que hace comparables dos parcelas de distinto tamaño.",
+        filas: parcelas.filter(p => p.superficie_ha == null).map(p => [
+          p.nombre_finca || [p.poligono, p.parcela, p.subparcela].filter(Boolean).join("/"),
+          p.kg ? nf(p.kg) + " kg" : "sin entradas",
+        ]),
+      },
+      {
+        titulo: "Descargas sin hora de vendimia",
+        porque: "El ticket de báscula no imprime la hora: se teclea al confirmar, "
+              + "desde el parte de campo. Se corrige con el botón ✎ de cada descarga.",
+        filas: (c ? c.descargas.filter(d => !d.hora) : []).map(d => [
+          `Ticket ${d.ticket} · ${d.parcela || d.ref_sigpac}`, fechaLarga(d.fecha),
+        ]),
+      },
+    ].filter(b => b.filas.length);
+
+    document.getElementById("cuenta-pendientes").className = bloques.length ? "cuenta" : "";
+    document.getElementById("cuenta-pendientes").textContent =
+      bloques.length ? bloques.reduce((s, b) => s + b.filas.length, 0) : "";
+
+    destino.innerHTML = bloques.length
+      ? bloques.map(b => `
+          <div class="bloque-pendiente">
+            <h3>${b.titulo} (${b.filas.length})</h3>
+            <p class="porque">${b.porque}</p>
+            ${b.filas.map(([que, donde]) => `
+              <div class="pendiente"><span class="que">${que}</span>
+                <span class="donde">${donde}</span></div>`).join("")}
+          </div>`).join("")
+      : '<p class="todo-hecho">✓ No falta nada por rellenar.</p>';
+  }
 
   /* --- Parcelas --- */
   async function cargarParcelas() {
