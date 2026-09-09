@@ -18,6 +18,11 @@
     --serie-1:    #2a78d6;
     --serie-2:    #eb6834;
     --serie-3:    #1baf7a;
+    --serie-4:    #eda100;
+    --serie-5:    #e87ba4;
+    --serie-6:    #008300;
+    --serie-7:    #4a3aa7;
+    --serie-8:    #e34948;
     --aviso:      #fab219;
   }
   @media (prefers-color-scheme: dark) {
@@ -34,6 +39,11 @@
       --serie-1:   #3987e5;
       --serie-2:   #d95926;
       --serie-3:   #199e70;
+      --serie-4:   #c98500;
+      --serie-5:   #d55181;
+      --serie-6:   #008300;
+      --serie-7:   #9085e9;
+      --serie-8:   #e66767;
     }
   }
   * { box-sizing: border-box; }
@@ -93,6 +103,8 @@
   .detalle-tipologia div { font-size: 13px; }
   .detalle-tipologia dt { color: var(--ink-2); font-size: 11.5px; }
   .detalle-tipologia dd { margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+  .barra-fila { height: 5px; border-radius: 3px; background: var(--grid); margin: 0 0 9px 20px; }
+  .barra-fila i { display: block; height: 100%; border-radius: 3px; background: var(--serie-1); }
   /* Seis dias: en fila en pantalla ancha, dos filas de tres en el movil. */
   .dias-tiempo { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
   @media (max-width: 760px) { .dias-tiempo { grid-template-columns: repeat(3, 1fr); gap: 6px; } }
@@ -254,6 +266,7 @@
   .guardado { font-size: 12px; color: #006300; margin-left: 8px; }
   @media (prefers-color-scheme: dark) { .guardado { color: #0ca30c; } }
   .sin-nombre { color: var(--ink-mute); font-style: italic; }
+  .fila-leyenda .ref { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
   .celda-editable {
     font: inherit; width: 100%; padding: 7px 9px; border-radius: 7px;
     border: 1px solid var(--borde); background: var(--plano); color: var(--ink);
@@ -392,9 +405,10 @@
 
   <div class="panel">
     <h2>Kilos por parcela</h2>
-    <p class="nota">Peso neto entregado en la campaña, por referencia SIGPAC.</p>
-    <div id="g-parcelas"></div>
-    <div class="desplaza"><table id="t-parcelas" class="fichas"></table></div>
+    <p class="nota">Peso neto entregado en la campaña. Pulsa una parcela para ver
+      su detalle. El nombre es el que le hayáis puesto en la finca; detrás va su
+      referencia SIGPAC.</p>
+    <div id="lista-parcelas"></div>
   </div>
 
   <div class="rejilla-2">
@@ -481,7 +495,8 @@
   let D = { finca: "", bodega: "", campanias: [] };
   const NS = "http://www.w3.org/2000/svg";
   const pista = document.getElementById("pista");
-  const SERIES = ["--serie-1", "--serie-2", "--serie-3"];
+  const SERIES = ["--serie-1", "--serie-2", "--serie-3", "--serie-4",
+                  "--serie-5", "--serie-6", "--serie-7", "--serie-8"];
 
   const nf = (v, d = 0) => v == null ? "—" :
     v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d,
@@ -677,26 +692,39 @@
       a0 = a1;
     });
 
-    if (!leyenda) return;
+    if (leyenda) listaDesplegable(leyenda, items);
+  }
 
-    // Cada tipologia despliega su detalle al pulsarla: los mismos datos que
-    // antes ocupaban una tabla entera, sin ocupar sitio hasta que se piden.
-    leyenda.innerHTML = items.map((item, i) => `
+  /* --- Lista desplegable: una fila por categoria, con su detalle al pulsarla.
+         La usan el reparto por tipologia y el listado de parcelas. --- */
+  function listaDesplegable(destino, items, opciones = {}) {
+    if (!items.length) {
+      destino.innerHTML = `<p class="vacio">${opciones.vacio || "Sin datos."}</p>`;
+      return;
+    }
+    const total = items.reduce((s, i) => s + i.valor, 0) || 1;
+    const max = Math.max(...items.map(i => i.valor), 0) || 1;
+    const raiz = destino.id || "lista";
+
+    destino.innerHTML = items.map((item, i) => `
       <div class="tipologia">
-        <button class="fila-leyenda" aria-expanded="false" aria-controls="det-${i}">
+        <button class="fila-leyenda" aria-expanded="false" aria-controls="${raiz}-${i}">
           <span class="flecha" aria-hidden="true">▶</span>
-          <i class="llave" style="background: var(${SERIES[i % SERIES.length]})"></i>
+          ${opciones.llave === false ? ""
+            : `<i class="llave" style="background: var(${SERIES[i % SERIES.length]})"></i>`}
           <span class="nombre">${item.etiqueta}</span>
           <span class="cifra">${item.texto}</span>
           <span class="pct">${nf(item.valor / total * 100, 1)}%</span>
         </button>
-        <dl class="detalle-tipologia oculto" id="det-${i}">
+        ${opciones.barra ? `<div class="barra-fila" aria-hidden="true"><i style="width:${
+          Math.max(item.valor / max * 100, 1)}%"></i></div>` : ""}
+        <dl class="detalle-tipologia oculto" id="${raiz}-${i}">
           ${(item.detalle || []).map(([etq, val]) => `
             <div><dt>${etq}</dt><dd>${val}</dd></div>`).join("")}
         </dl>
       </div>`).join("");
 
-    leyenda.querySelectorAll(".fila-leyenda").forEach(boton => {
+    destino.querySelectorAll(".fila-leyenda").forEach(boton => {
       boton.addEventListener("click", () => {
         const abierto = boton.getAttribute("aria-expanded") === "true";
         boton.setAttribute("aria-expanded", String(!abierto));
@@ -956,37 +984,26 @@
          se teclea al confirmar, desde el parte de campo.</div></div>`
       : "";
 
-    barrasH(document.getElementById("g-parcelas"), c.parcelas.map(p => ({
-      etiqueta: nombreParcela(p),
+    listaDesplegable(document.getElementById("lista-parcelas"), c.parcelas.map(p => ({
+      // Lo que se ve para escoger: nombre o apodo, y detras el SIGPAC.
+      etiqueta: p.nombre
+        ? `${p.nombre} <span class="ref">— ${p.ref}</span>`
+        : `<span class="sin-nombre">sin nombre</span> <span class="ref">— ${p.ref}</span>`,
       valor: p.kg, texto: nf(p.kg) + " kg",
       detalle: [
-        p.nombre ? `SIGPAC ${p.ref}` : "Sin nombre interno asignado",
-        p.variedad,
-        `${nf(p.kg)} kg · ${plural(p.descargas, "descarga", "descargas")}`,
-        `Grado ${nf(p.grado, 2)}% · color ${nf(p.color, 2)}`,
-        `Glucónico ${nf(p.gluconico, 2)} g/l`,
-        p.rendimiento
-          ? `${nf(p.rendimiento)} kg/ha sobre ${nf(p.superficie, 2)} ha`
-          : "Sin superficie asignada: no se puede calcular el rendimiento"
+        ["Variedad", p.variedad || "—"],
+        ["Descargas", nf(p.descargas)],
+        ["Grado medio", nf(p.grado, 2) + "%"],
+        ["Color medio", nf(p.color, 2)],
+        ["Glucónico medio", nf(p.gluconico, 2) + " g/l"],
+        ["Superficie", p.superficie ? nf(p.superficie, 2) + " ha" : "sin asignar"],
+        ["Rendimiento", p.rendimiento ? nf(p.rendimiento) + " kg/ha" : "—"],
+        ["Primera entrada", p.primera ? fechaLarga(p.primera) : "—"],
+        ["Última entrada", p.ultima ? fechaLarga(p.ultima) : "—"],
       ]
-    })), { vacio: "Todavía no hay parcelas volcadas." });
-
-    document.getElementById("t-parcelas").innerHTML =
-      `<thead><tr><th>Parcela</th><th>SIGPAC</th><th>Variedad</th>
-        <th class="n">Kilos</th><th class="n">Descargas</th><th class="n">Grado</th>
-        <th class="n">Color</th><th class="n">Glucónico</th>
-        <th class="n">ha</th><th class="n">kg/ha</th></tr></thead>
-       <tbody>${c.parcelas.map(p => `<tr>
-          <td data-etq="Parcela">${p.nombre || "<span style='color:var(--ink-mute)'>sin nombre</span>"}</td>
-          <td data-etq="SIGPAC">${p.ref}</td><td data-etq="Variedad">${p.variedad}</td>
-          <td class="n" data-etq="Kilos">${nf(p.kg)}</td>
-          <td class="n" data-etq="Descargas">${p.descargas}</td>
-          <td class="n" data-etq="Grado">${nf(p.grado, 2)}</td>
-          <td class="n" data-etq="Color">${nf(p.color, 2)}</td>
-          <td class="n" data-etq="Glucónico">${nf(p.gluconico, 2)}</td>
-          <td class="n" data-etq="Superficie">${p.superficie ? nf(p.superficie, 2) : "—"}</td>
-          <td class="n" data-etq="kg/ha">${p.rendimiento ? nf(p.rendimiento) : "—"}</td>
-        </tr>`).join("")}</tbody>`;
+    // Sin cuadro de color: aqui no hay grafico al que corresponda, y darle un
+    // color por posicion sugeriria una identidad que cambiaria al reordenar.
+    })), { barra: true, llave: false, vacio: "Todavía no hay parcelas volcadas." });
 
     const totalKg = c.resumen.kg || 1;
     quesito(document.getElementById("q-variedades"), c.variedades.map(v => ({
@@ -1156,7 +1173,10 @@
       "Los kilos son peso neto de báscula. Las medias de grado y color van ponderadas por kilos, "
       + "no en media simple: una descarga de 500 kg no pesa lo mismo que una de 5.000.";
     const sel = document.getElementById("selector");
-    if (!D.campanias.length) { vacio(document.getElementById("g-parcelas"), "Todavía no hay tickets confirmados."); return; }
+    if (!D.campanias.length) {
+      vacio(document.getElementById("lista-parcelas"), "Todavía no hay tickets confirmados.");
+      return;
+    }
     const previa = sel.value;
     sel.innerHTML = D.campanias.map(c => `<option>${c.campania}</option>`).join("");
     sel.value = D.campanias.some(c => c.campania === previa)

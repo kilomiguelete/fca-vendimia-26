@@ -155,9 +155,16 @@ lo ya volcado a mano.
 
 Resumen en seis tarjetas (kilos, grado, color, gluconico, parcelas y dias de
 vendimia), y justo debajo **Kilos por tipologia** con el quesito del reparto,
-que es la lectura que primero se busca. Cada tipologia de la leyenda **despliega
+que es la lectura que primero se busca. Tanto ahi como en **Kilos por parcela**, cada fila **despliega
 su detalle al pulsarla** -kilos, porcentaje, descargas, parcelas y medias de
 grado, color y gluconico-, en vez de una tabla siempre abierta.
+
+En el listado de parcelas la fila muestra **nombre o apodo - referencia SIGPAC**,
+sus kilos y una barra con su proporcion; el detalle trae variedad, descargas,
+medias de grado, color y gluconico, superficie, rendimiento y las fechas de la
+primera y la ultima entrada. Ahi las barras van todas del mismo color: no hay
+grafico al que correspondan, y colorearlas por posicion sugeriria una identidad
+que cambiaria al reordenar la lista.
 
 Despues la **prevision de Higueruela** (`/api/tiempo`, datos de Open-Meteo):
 seis dias, en fila en pantalla ancha y en dos filas de tres en el movil. Y luego
