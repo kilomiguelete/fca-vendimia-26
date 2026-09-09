@@ -71,18 +71,31 @@
   .rejilla-2 .panel { margin-top: 0; }
   .reparto { display: grid; grid-template-columns: 216px 1fr; gap: 26px; align-items: center; }
   @media (max-width: 760px) { .reparto { grid-template-columns: 1fr; gap: 4px; } }
+  .tipologia { border-top: 1px solid var(--grid); }
+  .tipologia:first-child { border-top: none; }
   .fila-leyenda {
-    display: flex; gap: 10px; align-items: baseline; padding: 7px 0;
-    border-top: 1px solid var(--grid); font-size: 13px;
+    display: flex; gap: 10px; align-items: baseline; padding: 9px 4px 9px 0;
+    font: inherit; font-size: 13px; width: 100%; text-align: left;
+    background: none; border: none; color: var(--ink); cursor: pointer;
   }
-  .fila-leyenda:first-child { border-top: none; }
+  .fila-leyenda:hover { background: var(--plano); }
   .fila-leyenda .nombre { flex: 1; min-width: 0; }
   .fila-leyenda .cifra { color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .fila-leyenda .pct { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 52px;
     text-align: right; }
-  .dias-tiempo { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  @media (max-width: 900px) { .dias-tiempo { grid-template-columns: repeat(4, 1fr); } }
-  @media (max-width: 520px) { .dias-tiempo { grid-template-columns: repeat(2, 1fr); } }
+  .fila-leyenda .flecha { color: var(--ink-mute); font-size: 10px; width: 12px; flex: none;
+    transition: transform .15s; }
+  .fila-leyenda[aria-expanded="true"] .flecha { transform: rotate(90deg); }
+  .detalle-tipologia {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: 10px 16px; padding: 4px 0 14px 22px;
+  }
+  .detalle-tipologia div { font-size: 13px; }
+  .detalle-tipologia dt { color: var(--ink-2); font-size: 11.5px; }
+  .detalle-tipologia dd { margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+  /* Seis dias: en fila en pantalla ancha, dos filas de tres en el movil. */
+  .dias-tiempo { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  @media (max-width: 760px) { .dias-tiempo { grid-template-columns: repeat(3, 1fr); gap: 6px; } }
   .dia-tiempo {
     border: 1px solid var(--borde); border-radius: 10px; padding: 10px 8px; text-align: center;
   }
@@ -367,12 +380,11 @@
       <div id="q-variedades"></div>
       <div id="leyenda-variedades"></div>
     </div>
-    <div class="desplaza"><table id="t-variedades" class="fichas"></table></div>
   </div>
 
   <div class="panel" id="panel-tiempo">
     <h2>Previsión en Higueruela</h2>
-    <p class="nota">Lluvia y temperatura de los próximos siete días, para decidir
+    <p class="nota">Lluvia y temperatura de los próximos seis días, para decidir
       cuándo entrar a vendimiar.</p>
     <div id="tiempo"></div>
   </div>
@@ -661,19 +673,37 @@
         d: `M ${cx} ${cy} L ${cx + r * Math.cos(a0)} ${cy + r * Math.sin(a0)} `
          + `A ${r} ${r} 0 ${barrido > Math.PI ? 1 : 0} 1 ${cx + r * Math.cos(a1)} ${cy + r * Math.sin(a1)} Z`,
         fill: "transparent" }, s);
-      conPista(zona, item.etiqueta, item.detalle);
+      conPista(zona, item.etiqueta, (item.detalle || []).map(([e, v]) => `${e}: ${v}`));
       a0 = a1;
     });
 
-    if (leyenda) {
-      leyenda.innerHTML = items.map((item, i) => `
-        <div class="fila-leyenda">
+    if (!leyenda) return;
+
+    // Cada tipologia despliega su detalle al pulsarla: los mismos datos que
+    // antes ocupaban una tabla entera, sin ocupar sitio hasta que se piden.
+    leyenda.innerHTML = items.map((item, i) => `
+      <div class="tipologia">
+        <button class="fila-leyenda" aria-expanded="false" aria-controls="det-${i}">
+          <span class="flecha" aria-hidden="true">▶</span>
           <i class="llave" style="background: var(${SERIES[i % SERIES.length]})"></i>
           <span class="nombre">${item.etiqueta}</span>
           <span class="cifra">${item.texto}</span>
           <span class="pct">${nf(item.valor / total * 100, 1)}%</span>
-        </div>`).join("");
-    }
+        </button>
+        <dl class="detalle-tipologia oculto" id="det-${i}">
+          ${(item.detalle || []).map(([etq, val]) => `
+            <div><dt>${etq}</dt><dd>${val}</dd></div>`).join("")}
+        </dl>
+      </div>`).join("");
+
+    leyenda.querySelectorAll(".fila-leyenda").forEach(boton => {
+      boton.addEventListener("click", () => {
+        const abierto = boton.getAttribute("aria-expanded") === "true";
+        boton.setAttribute("aria-expanded", String(!abierto));
+        document.getElementById(boton.getAttribute("aria-controls"))
+          .classList.toggle("oculto", abierto);
+      });
+    });
   }
 
   /* --- Columnas por fecha: magnitud a lo largo de la campana --- */
@@ -963,27 +993,15 @@
       etiqueta: v.variedad,
       valor: v.kg, texto: nf(v.kg) + " kg",
       detalle: [
-        `${nf(v.kg)} kg · ${plural(v.descargas, "descarga", "descargas")}`,
-        `${nf(v.kg / totalKg * 100, 1)}% de la campaña`,
-        `Grado ${nf(v.grado, 2)}% · color ${nf(v.color, 2)} · glucónico ${nf(v.gluconico, 2)}`,
-        plural(v.parcelas, "parcela", "parcelas"),
+        ["Kilos", nf(v.kg) + " kg"],
+        ["% de la campaña", nf(v.kg / totalKg * 100, 1) + "%"],
+        ["Descargas", nf(v.descargas)],
+        ["Parcelas", nf(v.parcelas)],
+        ["Grado medio", nf(v.grado, 2) + "%"],
+        ["Color medio", nf(v.color, 2)],
+        ["Glucónico medio", nf(v.gluconico, 2) + " g/l"],
       ]
     })), document.getElementById("leyenda-variedades"));
-
-    document.getElementById("t-variedades").innerHTML =
-      `<thead><tr><th>Variedad</th><th class="n">Kilos</th><th class="n">% campaña</th>
-        <th class="n">Descargas</th><th class="n">Parcelas</th>
-        <th class="n">Grado</th><th class="n">Color</th><th class="n">Glucónico</th></tr></thead>
-       <tbody>${c.variedades.map(v => `<tr>
-          <td data-etq="Variedad">${v.variedad}</td>
-          <td class="n" data-etq="Kilos">${nf(v.kg)}</td>
-          <td class="n" data-etq="% campaña">${nf(v.kg / totalKg * 100, 1)}%</td>
-          <td class="n" data-etq="Descargas">${v.descargas}</td>
-          <td class="n" data-etq="Parcelas">${v.parcelas}</td>
-          <td class="n" data-etq="Grado">${nf(v.grado, 2)}</td>
-          <td class="n" data-etq="Color">${nf(v.color, 2)}</td>
-          <td class="n" data-etq="Glucónico">${nf(v.gluconico, 2)}</td>
-        </tr>`).join("")}</tbody>`;
 
     columnas(document.getElementById("g-dias"), c.dias.map(d => ({
       fecha: d.fecha, valor: d.kg,

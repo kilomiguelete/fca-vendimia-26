@@ -23,7 +23,7 @@ export default conSesion(async (req, res) => {
     + `?latitude=${LAT}&longitude=${LON}`
     + "&daily=weather_code,temperature_2m_max,temperature_2m_min,"
     + "precipitation_sum,precipitation_probability_max"
-    + "&timezone=Europe%2FMadrid&forecast_days=8";
+    + "&timezone=Europe%2FMadrid&forecast_days=7";
 
   const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
   if (!r.ok) {
@@ -36,7 +36,7 @@ export default conSesion(async (req, res) => {
     return;
   }
 
-  // Se piden ocho dias y se descarta hoy: interesa manana y los seis siguientes.
+  // Se piden siete dias y se descarta hoy: interesan los seis siguientes.
   const dias = d.time.map((fecha, i) => ({
     fecha,
     tmax: d.temperature_2m_max?.[i] ?? null,
@@ -44,7 +44,7 @@ export default conSesion(async (req, res) => {
     lluvia: d.precipitation_sum?.[i] ?? null,
     probabilidad: d.precipitation_probability_max?.[i] ?? null,
     ...cielo(d.weather_code?.[i]),
-  })).slice(1, 8);
+  })).slice(1, 7);
 
   res.setHeader("Cache-Control", "private, max-age=1800");
   res.status(200).json({ lugar: "Higueruela, Albacete", dias });

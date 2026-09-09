@@ -142,9 +142,13 @@ lo ya volcado a mano.
 
 Resumen en seis tarjetas (kilos, grado, color, gluconico, parcelas y dias de
 vendimia), y justo debajo **Kilos por tipologia** con el quesito del reparto,
-que es la lectura que primero se busca. Despues la **prevision de Higueruela**
-(`/api/tiempo`, datos de Open-Meteo), y luego el detalle: parcelas, dia a dia,
-comparativa entre campanas y descargas.
+que es la lectura que primero se busca. Cada tipologia de la leyenda **despliega
+su detalle al pulsarla** -kilos, porcentaje, descargas, parcelas y medias de
+grado, color y gluconico-, en vez de una tabla siempre abierta.
+
+Despues la **prevision de Higueruela** (`/api/tiempo`, datos de Open-Meteo):
+seis dias, en fila en pantalla ancha y en dos filas de tres en el movil. Y luego
+el detalle: parcelas, dia a dia, comparativa entre campanas y descargas.
 
 El boton de subir ticket vive en el menu de hamburguesa, no en la cabecera.
 
