@@ -31,7 +31,7 @@
     --aviso:      #d98c0a;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       color-scheme: dark;
       --plano:     #14100f;
       --surface-1: #1f1a18;
@@ -53,6 +53,28 @@
       --serie-8:   #3987e5;
       --aviso:     #e0a53a;
     }
+  }
+  :root[data-theme="dark"] {
+      color-scheme: dark;
+      --plano:     #14100f;
+      --surface-1: #1f1a18;
+      --ink:       #fdf8f3;
+      --ink-2:     #cbbdb4;
+      --ink-mute:  #948379;
+      --grid:      #322925;
+      --eje:       #40342e;
+      --borde:     rgba(253,248,243,0.11);
+      --vino:      #c4566e;
+      --lluvia:    #6aa6ee;
+      --serie-1:   #e66767;
+      --serie-2:   #9085e9;
+      --serie-3:   #008300;
+      --serie-4:   #d55181;
+      --serie-5:   #c98500;
+      --serie-6:   #199e70;
+      --serie-7:   #d95926;
+      --serie-8:   #3987e5;
+      --aviso:     #e0a53a;
   }
   * { box-sizing: border-box; }
   body {
@@ -152,12 +174,17 @@
   .simbolo .t-rayo { fill: #eda100; }
   .dia-tiempo .cielo { font-size: 11px; color: var(--ink-2); margin-bottom: 2px; }
   @media (prefers-color-scheme: dark) {
-    .simbolo .t-sol { fill: #e0b23a; stroke: #e0b23a; }
-    .simbolo .t-nube { fill: #7f858e; }
-    .simbolo .t-nube-linea { stroke: #7f858e; }
-    .simbolo .t-agua { stroke: #6aa6ee; }
-    .simbolo .t-rayo { fill: #e0b23a; }
+    :root:not([data-theme="light"]) .simbolo .t-sol { fill: #e0b23a; stroke: #e0b23a; }
+    :root:not([data-theme="light"]) .simbolo .t-nube { fill: #7f858e; }
+    :root:not([data-theme="light"]) .simbolo .t-nube-linea { stroke: #7f858e; }
+    :root:not([data-theme="light"]) .simbolo .t-agua { stroke: #6aa6ee; }
+    :root:not([data-theme="light"]) .simbolo .t-rayo { fill: #e0b23a; }
   }
+  :root[data-theme="dark"] .simbolo .t-sol { fill: #e0b23a; stroke: #e0b23a; }
+  :root[data-theme="dark"] .simbolo .t-nube { fill: #7f858e; }
+  :root[data-theme="dark"] .simbolo .t-nube-linea { stroke: #7f858e; }
+  :root[data-theme="dark"] .simbolo .t-agua { stroke: #6aa6ee; }
+  :root[data-theme="dark"] .simbolo .t-rayo { fill: #e0b23a; }
   .dia-tiempo .temps { font-size: 13.5px; font-variant-numeric: tabular-nums; }
   .dia-tiempo .temps .min { color: var(--ink-2); }
   .dia-tiempo .agua { font-size: 11.5px; margin-top: 3px; font-variant-numeric: tabular-nums; }
@@ -265,7 +292,10 @@
   .subida.hecho .punto { background: #0ca30c; }
   .subida.error .punto { background: #d03b3b; }
   .subida.error .estado { color: #d03b3b; }
-  @media (prefers-color-scheme: dark) { .cuadre.bien { color: #0ca30c; } }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .cuadre.bien { color: #0ca30c; }
+  }
+  :root[data-theme="dark"] .cuadre.bien { color: #0ca30c; }
   .duda { display: flex; gap: 8px; font-size: 12.5px; color: var(--ink-2);
     background: color-mix(in srgb, var(--aviso) 10%, transparent);
     border-radius: 7px; padding: 8px 11px; margin-bottom: 7px; }
@@ -307,7 +337,10 @@
   .cajon .boton.principal:hover { filter: brightness(1.1); background: var(--vino); }
   .separador { height: 1px; background: var(--borde); margin: 12px 6px; }
   .guardado { font-size: 12px; color: #006300; margin-left: 8px; }
-  @media (prefers-color-scheme: dark) { .guardado { color: #0ca30c; } }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .guardado { color: #0ca30c; }
+  }
+  :root[data-theme="dark"] .guardado { color: #0ca30c; }
   .sin-nombre { color: var(--ink-mute); font-style: italic; }
   .fila-leyenda .ref { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
   .celda-editable {
@@ -410,6 +443,8 @@
     <div class="separador"></div>
     <button data-vista="panel" aria-current="true">Panel</button>
     <button data-vista="parcelas">Parcelas</button>
+    <div class="separador"></div>
+    <button id="b-tema"></button>
   </nav>
 
   <div id="vista-panel">
@@ -1193,6 +1228,38 @@
       });
     });
   }
+
+  /* --- Tema claro u oscuro ---
+     Sin eleccion, se sigue al sistema. Al elegir, se marca en la raiz y se
+     recuerda; la eleccion gana sobre el sistema en ambos sentidos. */
+  const bTema = document.getElementById("b-tema");
+
+  const sistemaEnOscuro = () =>
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const temaElegido = () => {
+    try { return localStorage.getItem("tema"); } catch { return null; }
+  };
+  const enOscuro = () => (temaElegido() || (sistemaEnOscuro() ? "dark" : "light")) === "dark";
+
+  function aplicarTema() {
+    const elegido = temaElegido();
+    if (elegido) document.documentElement.setAttribute("data-theme", elegido);
+    else document.documentElement.removeAttribute("data-theme");
+    bTema.textContent = enOscuro() ? "Modo claro" : "Modo oscuro";
+    bTema.setAttribute("aria-label",
+      enOscuro() ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+  }
+
+  bTema.addEventListener("click", () => {
+    const nuevo = enOscuro() ? "light" : "dark";
+    try { localStorage.setItem("tema", nuevo); } catch {}
+    aplicarTema();
+    // Los graficos llevan los colores en variables CSS, asi que cambian solos;
+    // el quesito y las barras se redibujan igual por si acaso.
+    const sel = document.getElementById("selector");
+    if (sel && sel.value && D.campanias.length) pintar(sel.value);
+  });
+  aplicarTema();
 
   /* --- Paneles plegables ---
      Se montan sobre la estructura ya escrita: la cabecera de cada panel gana un

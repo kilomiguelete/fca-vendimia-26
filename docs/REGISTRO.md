@@ -161,6 +161,16 @@ tocar ninguna pareja contigua: al invertir un camino, las parejas se conservan,
 y por eso sigue pasando el validador en claro y en oscuro. La lluvia mantiene su
 azul propio (`--lluvia`): tenirla de vino la haria parecer una alarma.
 
+### Tema claro u oscuro
+
+Sin elegir nada, el sitio sigue al sistema. El boton del menu fija uno de los
+dos y lo recuerda en el navegador; el rotulo dice a que modo se cambia, no en
+cual se esta. Los tonos oscuros se declaran dos veces a proposito: bajo
+`@media (prefers-color-scheme: dark)` con el guardo `:not([data-theme="light"])`
+-para que elegir claro le gane al sistema- y bajo `:root[data-theme="dark"]`
+-para que elegir oscuro le gane tambien-. Sin esa duplicidad, el boton solo
+funcionaria en un sentido.
+
 ### Paneles plegables
 
 Todas las secciones del panel se pliegan desde el boton de su titulo; el resumen
