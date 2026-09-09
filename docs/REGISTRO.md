@@ -167,7 +167,12 @@ grafico al que correspondan, y colorearlas por posicion sugeriria una identidad
 que cambiaria al reordenar la lista.
 
 Despues la **prevision de Higueruela** (`/api/tiempo`, datos de Open-Meteo):
-seis dias, en fila en pantalla ancha y en dos filas de tres en el movil. Y luego
+seis dias, en fila en pantalla ancha y en dos filas de tres en el movil. Los
+simbolos del cielo van **dibujados en SVG, no en emoji**: varios caracteres del
+tiempo (sol, lluvia, niebla, tormenta) no llevan presentacion de emoji por
+defecto y Safari en iPhone los pintaba como glifo monocromo. La API devuelve una
+clave (`despejado`, `lluvia`, ...) y el dibujo lo pone el navegador, con su
+rotulo debajo para que el simbolo no cargue solo con el significado. Y luego
 el detalle: parcelas, dia a dia, comparativa entre campanas y descargas.
 
 El boton de subir ticket vive en el menu de hamburguesa, no en la cabecera.
