@@ -153,18 +153,28 @@
   .barra-fila { height: 5px; border-radius: 3px; background: var(--grid); margin: 0 0 9px 20px; }
   .barra-fila i { display: block; height: 100%; border-radius: 3px; background: var(--vino); }
   /* Seis dias: en fila en pantalla ancha, dos filas de tres en el movil. */
-  .dias-tiempo { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-  @media (max-width: 760px) { .dias-tiempo { grid-template-columns: repeat(3, 1fr); gap: 6px; } }
-  .dia-tiempo {
-    border: 1px solid var(--borde); border-radius: 10px; padding: 10px 8px; text-align: center;
+  /* Tira de una sola linea: la prevision es un vistazo, no una seccion. */
+  .tira-tiempo {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    background: var(--surface-1); border: 1px solid var(--borde); border-radius: 10px;
+    padding: 6px 12px; overflow-x: auto; scrollbar-width: none;
   }
-  .dia-tiempo.llueve { border-color: var(--lluvia);
-    background: color-mix(in srgb, var(--lluvia) 8%, transparent); }
-  .dia-tiempo .cuando { font-size: 11.5px; color: var(--ink-2); text-transform: capitalize; }
+  .tira-tiempo::-webkit-scrollbar { display: none; }
+  .tira-tiempo:empty { display: none; }
+  .tira-tiempo .lugar {
+    font-size: 11.5px; color: var(--ink-mute); text-transform: uppercase;
+    letter-spacing: .05em; flex: none; padding-right: 2px;
+  }
+  .dia-tiempo {
+    display: flex; align-items: center; gap: 5px; flex: none;
+    font-size: 12.5px; padding: 3px 7px; border-radius: 7px; white-space: nowrap;
+  }
+  .dia-tiempo.llueve { background: color-mix(in srgb, var(--lluvia) 12%, transparent); }
+  .dia-tiempo .cuando { color: var(--ink-2); text-transform: capitalize; }
   /* Alto fijo y centrado por flex: dejar que la caja la dictara el SVG en linea
      hacia que se desbordara y el rotulo se montara encima del dibujo. */
-  .dia-tiempo .simbolo { height: 42px; display: flex; align-items: center; justify-content: center; }
-  .dia-tiempo .simbolo svg { display: block; width: 34px; height: 37px; flex: none; }
+  .dia-tiempo .simbolo { display: flex; align-items: center; }
+  .dia-tiempo .simbolo svg { display: block; width: 19px; height: 21px; flex: none; }
   /* El color va aqui, en CSS, y no en atributos fill="var(...)": Safari no
      resuelve variables CSS dentro de atributos de presentacion de SVG. */
   .simbolo .t-sol { fill: #eda100; stroke: #eda100; }
@@ -172,7 +182,7 @@
   .simbolo .t-nube-linea { stroke: #b9bcc2; fill: none; }
   .simbolo .t-agua { stroke: #2a78d6; fill: none; }
   .simbolo .t-rayo { fill: #eda100; }
-  .dia-tiempo .cielo { font-size: 11px; color: var(--ink-2); margin-bottom: 2px; }
+
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .simbolo .t-sol { fill: #e0b23a; stroke: #e0b23a; }
     :root:not([data-theme="light"]) .simbolo .t-nube { fill: #7f858e; }
@@ -185,11 +195,19 @@
   :root[data-theme="dark"] .simbolo .t-nube-linea { stroke: #7f858e; }
   :root[data-theme="dark"] .simbolo .t-agua { stroke: #6aa6ee; }
   :root[data-theme="dark"] .simbolo .t-rayo { fill: #e0b23a; }
-  .dia-tiempo .temps { font-size: 13.5px; font-variant-numeric: tabular-nums; }
-  .dia-tiempo .temps .min { color: var(--ink-2); }
-  .dia-tiempo .agua { font-size: 11.5px; margin-top: 3px; font-variant-numeric: tabular-nums; }
-  .dia-tiempo .agua.hay { color: var(--lluvia); font-weight: 600; }
-  .dia-tiempo .agua.no { color: var(--ink-mute); }
+  .dia-tiempo .temps { font-variant-numeric: tabular-nums; }
+  .dia-tiempo .temps .min { color: var(--ink-mute); }
+  .dia-tiempo .agua { font-size: 11.5px; font-variant-numeric: tabular-nums;
+    color: var(--lluvia); font-weight: 600; }
+  /* En el movil la tira se aprieta: sin minima y sin unidad, para que quepan
+     mas dias de un vistazo. El detalle sigue en el titulo de cada dia. */
+  @media (max-width: 760px) {
+    .tira-tiempo { gap: 6px; padding: 5px 8px; }
+    .tira-tiempo .lugar { display: none; }
+    .dia-tiempo { gap: 3px; padding: 3px 5px; font-size: 12px; }
+    .dia-tiempo .temps .min, .dia-tiempo .agua .unidad { display: none; }
+    .dia-tiempo .simbolo svg { width: 17px; height: 19px; }
+  }
   .aviso {
     display: flex; gap: 10px; align-items: flex-start;
     background: var(--surface-1); border: 1px solid var(--borde);
@@ -461,12 +479,14 @@
     <div class="separador"></div>
     <button data-vista="panel" aria-current="true">Panel</button>
     <button data-vista="parcelas">Parcelas</button>
+    <button data-vista="comparativa">Comparativa entre campañas</button>
     <button data-vista="pendientes">Pendientes <span id="cuenta-pendientes"></span></button>
     <div class="separador"></div>
     <button id="b-tema"></button>
   </nav>
 
   <div id="vista-panel">
+  <div id="tira-tiempo" class="tira-tiempo"></div>
   <div id="estado-subida"></div>
 
   <div class="panel revision oculto" id="panel-revision">
@@ -491,14 +511,6 @@
     </div>
   </div>
 
-  <div class="panel" id="panel-tiempo">
-    <h2>Previsión en Higueruela</h2>
-    <p class="nota">Lluvia y temperatura de los próximos seis días, para decidir
-      cuándo entrar a vendimiar.</p>
-    <div id="tiempo"></div>
-  </div>
-
-
   <div class="panel">
     <h2>Kilos por parcela</h2>
     <p class="nota">Peso neto entregado en la campaña. Pulsa una parcela para ver
@@ -518,23 +530,6 @@
       <p class="nota">Grado alcohólico probable, media ponderada por kilos.</p>
       <div id="g-grado"></div>
     </div>
-  </div>
-
-  <div class="panel">
-    <div class="cabecera-panel">
-      <div>
-        <h2>Comparativa entre campañas</h2>
-        <p class="nota" id="nota-comparativa">Cada parcela, año a año. El resto de
-          datos van en el detalle al pasar el ratón.</p>
-      </div>
-      <label class="sub">Medida
-        <select id="medida-comparativa">
-          <option value="kg">Kilos</option>
-          <option value="ha">Kilos por hectárea</option>
-        </select>
-      </label>
-    </div>
-    <div id="g-campanias"></div>
   </div>
 
   <div class="panel">
@@ -566,6 +561,26 @@
       <div id="pendientes-parcelas"></div>
       <div class="desplaza"><table id="t-parcelas-edit" class="fichas"></table></div>
     </div>
+  </div>
+
+  <div id="vista-comparativa" class="oculto">
+  <div class="panel" style="margin-top:0">
+    <div class="cabecera-panel">
+      <div>
+        <h2>Comparativa entre campañas</h2>
+        <p class="nota" id="nota-comparativa">Cada parcela, año a año. El resto de
+          datos van en el detalle al pasar el ratón.</p>
+      </div>
+      <label class="sub">Medida
+        <select id="medida-comparativa">
+          <option value="kg">Kilos</option>
+          <option value="ha">Kilos por hectárea</option>
+        </select>
+      </label>
+    </div>
+    <div id="g-campanias"></div>
+  </div>
+
   </div>
 
   <div id="vista-pendientes" class="oculto">
@@ -955,6 +970,8 @@
   let medidaComparativa = "kg";
 
   function comparativa(destino) {
+    // Oculta mide cero de ancho: se dibuja al entrar en su pagina.
+    if (!destino.offsetParent) return;
     const porHa = medidaComparativa === "ha";
     if (D.campanias.length < 2) {
       const c = D.campanias[0];
@@ -1400,28 +1417,29 @@
     .toLocaleDateString("es-ES", { weekday: "short" }).replace(".", "");
 
   async function cargarTiempo() {
-    const destino = document.getElementById("tiempo");
+    const destino = document.getElementById("tira-tiempo");
     let datos;
     try {
       datos = await pedir("/api/tiempo");
     } catch (e) {
       // Que falle la previsión no puede tumbar el panel: es información de apoyo.
-      destino.innerHTML = `<p class="vacio">No se pudo consultar la previsión: ${e.message}</p>`;
+      destino.innerHTML = `<span class="lugar">Previsión</span>
+        <span class="dia-tiempo" style="color: var(--ink-mute)">no disponible: ${e.message}</span>`;
       return;
     }
-    destino.innerHTML = `<div class="dias-tiempo">${datos.dias.map((d, i) => {
-      const llueve = (d.lluvia || 0) >= 0.2 || (d.probabilidad || 0) >= 40;
-      return `<div class="dia-tiempo ${llueve ? "llueve" : ""}">
-        <div class="cuando">${i === 0 ? "mañana" : diaSemana(d.fecha)} ${d.fecha.slice(8)}</div>
-        <div class="simbolo" title="${d.texto}">${dibujoCielo(d.clave)}</div>
-        <div class="cielo">${d.texto}</div>
-        <div class="temps">${d.tmax == null ? "—" : nf(d.tmax, 0)}°<span class="min"> / ${
-          d.tmin == null ? "—" : nf(d.tmin, 0)}°</span></div>
-        <div class="agua ${llueve ? "hay" : "no"}">${
-          llueve ? `${nf(d.lluvia || 0, 1)} mm · ${nf(d.probabilidad || 0, 0)}%`
-                 : "sin lluvia"}</div>
-      </div>`;
-    }).join("")}</div>`;
+    destino.innerHTML = `<span class="lugar">Higueruela</span>`
+      + datos.dias.map((d, i) => {
+          const llueve = (d.lluvia || 0) >= 0.2 || (d.probabilidad || 0) >= 40;
+          return `<span class="dia-tiempo ${llueve ? "llueve" : ""}"
+                        title="${d.texto}${llueve ? ` · ${nf(d.lluvia || 0, 1)} mm, ${
+                          nf(d.probabilidad || 0, 0)}% de probabilidad` : " · sin lluvia"}">
+            <span class="cuando">${i === 0 ? "mañana" : diaSemana(d.fecha)}</span>
+            <span class="simbolo">${dibujoCielo(d.clave)}</span>
+            <span class="temps">${d.tmax == null ? "—" : nf(d.tmax, 0)}°<span class="min">/${
+              d.tmin == null ? "—" : nf(d.tmin, 0)}°</span></span>
+            ${llueve ? `<span class="agua">${nf(d.lluvia || 0, 1)}<span class="unidad"> mm</span></span>` : ""}
+          </span>`;
+        }).join("");
   }
 
   /* --- Servidor --- */
@@ -1763,12 +1781,13 @@
   });
 
   async function irA(vista) {
-    ["panel", "parcelas", "pendientes"].forEach(v =>
+    ["panel", "parcelas", "comparativa", "pendientes"].forEach(v =>
       document.getElementById("vista-" + v).classList.toggle("oculto", v !== vista));
     cajon.querySelectorAll("[data-vista]").forEach(b =>
       b.setAttribute("aria-current", String(b.dataset.vista === vista)));
     menu(false);
     if (vista === "parcelas") await cargarParcelas();
+    if (vista === "comparativa") comparativa(document.getElementById("g-campanias"));
     if (vista === "pendientes") await cargarPendientes();
   }
   cajon.querySelectorAll("[data-vista]").forEach(b =>

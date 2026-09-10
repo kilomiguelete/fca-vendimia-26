@@ -219,9 +219,13 @@ ese hueco y sigue funcionando; no se espera por ella para pintar el resto.
 
 ### Secciones
 
-El menu de hamburguesa (arriba a la izquierda) tiene dos secciones:
+El menu de hamburguesa (arriba a la izquierda) tiene cuatro secciones:
 
 - **Panel**: el dashboard y la bandeja de revision.
+- **Comparativa entre campanas**: en pagina propia, porque solo se mira de vez
+  en cuando y ocupaba sitio a diario. Se dibuja al entrar: oculta medira cero de
+  ancho.
+- **Pendientes**: lo que falta por rellenar.
 - **Parcelas**: todas las parcelas que han aparecido en algun ticket, con su
   referencia SIGPAC y un campo para ponerles el nombre con el que se las llama
   en la finca. El nombre se guarda al salir del campo y pasa a usarse en todo
