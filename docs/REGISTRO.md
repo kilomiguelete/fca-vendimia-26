@@ -98,6 +98,21 @@ cada push. Tiene dos mitades:
   Nada entra al registro sin que una persona lo confirme en pantalla, con la
   foto al lado.
 
+### Tickets repetidos
+
+Al subir una foto, en cuanto se lee el numero de ticket se comprueba si ya esta
+en el registro, y se avisa ahi mismo: en la linea de esa foto y en un resumen al
+final de la subida. El aviso dice la fecha, la parcela y los kilos del que ya
+habia, para poder compararlos.
+
+**No se bloquea la subida**: volver a subir un ticket para corregir una lectura
+mala es legitimo, y quien decide cual se queda es quien revisa. Lo que si
+bloquea es confirmar dos veces el mismo numero en la misma campana, por el
+indice unico de la base. Un ticket descartado no cuenta como repetido.
+
+El aviso llega antes que el de confirmar, que es lo que importa: para cuando se
+confirma, la lectura ya esta hecha y pagada.
+
 ### Por que la confirmacion no es opcional
 
 Un ticket de bascula no se lee solo con los ojos: hay que saber que pesa el

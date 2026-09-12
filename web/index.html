@@ -310,6 +310,8 @@
   .subida.hecho .punto { background: #0ca30c; }
   .subida.error .punto { background: #d03b3b; }
   .subida.error .estado { color: #d03b3b; }
+  .subida.repetido .punto { background: var(--aviso); }
+  .subida.repetido .estado { color: var(--aviso); font-weight: 600; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .cuadre.bien { color: #0ca30c; }
   }
@@ -1479,7 +1481,8 @@
 
   /* --- Subida de tickets --- */
   const estadoSubida = document.getElementById("estado-subida");
-  const ESTADOS = { espera: "en cola", leyendo: "leyendo…", hecho: "leído", error: "no se pudo" };
+  const ESTADOS = { espera: "en cola", leyendo: "leyendo…", hecho: "leído",
+                    repetido: "ya existe", error: "no se pudo" };
 
   // Una linea por foto: subiendo ocho tickets, saber cual ha fallado importa.
   function pintarSubidas(lista) {
@@ -1535,14 +1538,28 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ base64, tipo: "image/jpeg" }),
         });
-        lista[i].estado = "hecho";
-        lista[i].detalle = borrador?.ticket ? `ticket ${borrador.ticket}` : "leído";
+        if (borrador?.duplicado) {
+          lista[i].estado = "repetido";
+          lista[i].detalle = `el ticket ${borrador.ticket} ya estaba `
+            + (borrador.duplicado.estado === "confirmado" ? "confirmado" : "como borrador");
+        } else {
+          lista[i].estado = "hecho";
+          lista[i].detalle = borrador?.ticket ? `ticket ${borrador.ticket}` : "leído";
+        }
       } catch (e) {
         lista[i].estado = "error";
         lista[i].detalle = e.message;
       }
       pintarSubidas(lista);
       await cargarBorradores();   // cada uno aparece en la bandeja al terminar
+    }
+    const repetidos = lista.filter(f => f.estado === "repetido").length;
+    if (repetidos) {
+      estadoSubida.insertAdjacentHTML("beforeend",
+        `<div class="aviso"><span>⚠</span><div><strong>${
+          repetidos === 1 ? "Un ticket ya estaba" : repetidos + " tickets ya estaban"} en el registro.</strong>
+         Se ${repetidos === 1 ? "ha subido igualmente" : "han subido igualmente"} como borrador por si
+         la lectura anterior era mala. Compruébalo abajo y descarta el que sobre.</div></div>`);
     }
     bSubir.disabled = false;
   });

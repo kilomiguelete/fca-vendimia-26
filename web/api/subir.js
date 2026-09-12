@@ -3,6 +3,8 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { conSesion, bd, fechaISO } from "./_comun.js";
 
+const fecha_es = f => { const [a, m, d] = String(f).split("-"); return `${d}/${m}/${a}`; };
+
 const numero = () => z.number().nullable();
 // Sin nulo: la API limita a 16 los campos con tipo union, y los nulables cuentan.
 // En texto, la cadena vacia ya expresa "ausente" sin ambiguedad; en los numericos
@@ -132,6 +134,31 @@ export default conSesion(async (req, res) => {
   const vacio = v => { const x = (v ?? "").trim(); return x === "" ? null : x; };
 
   const sql = bd();
+
+  // Aviso de duplicado en cuanto se sabe el numero, no al confirmar: para
+  // entonces la lectura ya esta hecha y pagada. No se bloquea la subida, que
+  // volver a subir una foto para corregir una lectura mala es legitimo.
+  let duplicado = null;
+  if (t.ticket) {
+    const [previo] = await sql`
+      select id, estado, ticket, campania, kg_neto,
+             to_char(fecha, 'YYYY-MM-DD') as fecha,
+             concat_ws('/', poligono, parcela, subparcela) as ref
+        from tickets
+       where ticket = ${t.ticket} and estado <> 'descartado'
+       order by (estado = 'confirmado') desc, creado_en
+       limit 1`;
+    if (previo) {
+      duplicado = previo;
+      dudas.unshift(
+        `El ticket ${previo.ticket} ya está en el registro`
+        + (previo.estado === "confirmado" ? " (confirmado)" : " (como borrador sin confirmar)")
+        + `: ${previo.fecha ? fecha_es(previo.fecha) : "sin fecha"}, parcela ${previo.ref || "—"}`
+        + `${previo.kg_neto ? ", " + previo.kg_neto + " kg" : ""}. `
+        + "Compruébalo antes de confirmar: si es el mismo, descarta este.");
+    }
+  }
+
   const [fila] = await sql`
     insert into tickets (estado, jpg, jpg_tipo, ticket, fecha, campania, poligono, parcela,
       subparcela, paraje, variedad, incidencia, matricula_1, matricula_2, kg_bruto, kg_tara,
@@ -143,5 +170,5 @@ export default conSesion(async (req, res) => {
       ${t.ph}, ${t.gluconico}, ${JSON.stringify(dudas)}::jsonb, ${JSON.stringify(t)}::jsonb)
     returning id, ticket, fecha`;
 
-  res.status(200).json({ borrador: fila });
+  res.status(200).json({ borrador: { ...fila, duplicado } });
 });
